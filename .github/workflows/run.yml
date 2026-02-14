@@ -1,0 +1,27 @@
+name: Daily Intelligence Report
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'   # 6時間ごと
+  workflow_dispatch:
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: pip install requests
+
+    - name: Run Script
+      env:
+        XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+        DISCORD_WEB_HOOK: ${{ secrets.DISCORD_WEB_HOOK }}
+      run: python main.py
