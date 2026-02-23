@@ -23,7 +23,9 @@ TARGET_ACCOUNTS = [
 def load_db():
     if os.path.exists(DB_FILE):
         with open(DB_FILE, "r") as f:
-            try: return json.load(f)
+            content = f.read().strip()
+            if not content or content == "": return {}
+            try: return json.loads(content)
             except: return {}
     return {}
 
@@ -32,17 +34,17 @@ def save_db(db):
         json.dump(db, f, indent=4)
 
 def check_account(account, last_id):
-    # APIの解釈ミスを防ぐため、プロンプトを英語で具体化
+    # APIの混乱を防ぐため、明確に「最新の1件」を求める指示にしています
     prompt = f"Find the absolute latest post from {account} on X. If the post ID is newer than {last_id}, provide the ID and a brief summary. If no new post, reply 'None'."
     
     try:
         response = client.chat.completions.create(
             model="grok-2", 
             messages=[
-                {"role": "system", "content": "Financial Analyst Bot. Format: ID: [numeric_id] / Summary: [text]. If not, reply 'None'."},
+                {"role": "system", "content": "You are a financial analyst bot. Format: ID: [numeric_id] / Summary: [text]. If nothing new, reply 'None'."},
                 {"role": "user", "content": prompt}
             ],
-            # エラー原因だった tools 構造を最新仕様に完全準拠
+            # 修正ポイント：画像のエラーログに基づき、正しいネスト構造に修正
             tools=[{
                 "type": "live_search",
                 "live_search": {
@@ -59,9 +61,11 @@ def check_account(account, last_id):
 
 def send_discord(message):
     if not DISCORD_WEB_HOOK:
+        print("Error: DISCORD_WEB_HOOK is missing.")
         return
     try:
-        requests.post(DISCORD_WEB_HOOK, json={"content": message})
+        r = requests.post(DISCORD_WEB_HOOK, json={"content": message})
+        r.raise_for_status()
     except Exception as e:
         print(f"Discord sending error: {e}")
 
@@ -77,7 +81,7 @@ def main():
 
         if result and "ID:" in result:
             try:
-                # 正規表現で確実に抽出
+                # 正規表現でIDとSummaryを確実に抽出
                 id_match = re.search(r"ID:\s*(\d+)", result)
                 summary_match = re.search(r"Summary:\s*(.+)", result, re.S)
                 
@@ -85,7 +89,7 @@ def main():
                     new_id = id_match.group(1)
                     summary = summary_match.group(1).strip()
 
-                    # 新着判定：初回実行(0)または最新IDの場合
+                    # 初回(last_id="0") または 新しいIDの場合に通知
                     if last_id == "0" or int(new_id) > int(last_id):
                         db[account] = new_id
                         new_updates.append(f"👤 **{account}**\n📝 {summary}\n🔗 https://x.com/i/status/{new_id}")
@@ -96,7 +100,7 @@ def main():
         header = "🔔 **【投資家X監視：新着レポート】**\n\n"
         full_msg = header + "\n\n---\n\n".join(new_updates)
         
-        # Discordの文字数制限対策
+        # Discordの2000文字制限対策（1900文字で分割）
         if len(full_msg) > 1900:
             for i in range(0, len(full_msg), 1900):
                 send_discord(full_msg[i:i+1900])
@@ -104,9 +108,9 @@ def main():
             send_discord(full_msg)
             
         save_db(db)
-        print(f"Done! {len(new_updates)} updates sent.")
+        print(f"Done! {len(new_updates)} updates sent to Discord.")
     else:
-        print("No new updates found.")
+        print("No new updates to notify in this run.")
 
 if __name__ == "__main__":
     main()
