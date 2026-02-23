@@ -34,15 +34,16 @@ def save_db(db):
         json.dump(db, f, indent=4)
 
 def check_account(account, last_id):
-    prompt = f"Find the absolute latest post from {account} on X. If the post ID is newer than {last_id}, provide the ID and a brief summary. If no new post, reply 'None'."
+    prompt = f"Find the absolute latest post from {account} on X. If the post ID is newer than {last_id}, provide the numeric ID and a brief summary. If no new post, reply 'None'."
+    
     try:
         response = client.chat.completions.create(
-            model="grok-2", # grok-4から修正
+            model="grok-2", 
             messages=[
-                {"role": "system", "content": "Format: ID: [numeric_id] / Summary: [text]. If not, reply 'None'."},
+                {"role": "system", "content": "Return format: ID: [numeric_id] / Summary: [text]. If nothing new, return 'None'."},
                 {"role": "user", "content": prompt}
             ],
-            # 修正：live_searchの内部にsourcesを入れる正しい構造
+            # ↓ここが修正ポイントです
             tools=[{
                 "type": "live_search",
                 "live_search": {
