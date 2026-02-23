@@ -31,24 +31,27 @@ def save_db(db):
         json.dump(db, f, indent=4)
 
 def check_account(account, last_id):
-    prompt = f"Find the absolute latest post from {account} on X. If the post ID is strictly newer than {last_id}, provide the numeric ID and a brief summary. If no new post, reply 'None'."
-    
+    prompt = f"""@{account} のX（旧Twitter）での**絶対に最新**の投稿を1つだけ探してください。
+投稿ID（数値）と、投稿内容の簡潔な要約を以下の形式で**厳密に**返してください。
+IDが見つからなければ「None」とだけ返してください。
+
+出力形式（これ以外は出力しない）:
+ID: [投稿の数値ID]
+Summary: [100文字以内の要約]
+
+最新の投稿IDが {last_id} より厳密に新しい場合のみIDを返し、それ以外は「None」としてください。"""
+
     try:
         response = client.chat.completions.create(
-            model="grok-2", 
+            model="grok-beta",  # 最新モデルに更新（grok-2 より推奨）
             messages=[
-                {"role": "system", "content": "Return format: ID: [numeric_id] / Summary: [text]. If nothing new, return 'None'."},
+                {"role": "system", "content": "あなたはXの最新投稿を正確に取得できるアシスタントです。必ず指定された形式で返してください。Xのリアルタイムデータを活用してください。"},
                 {"role": "user", "content": prompt}
             ],
-            # 修正：live_searchの定義をAPIの期待する構造に変更
-            tools=[{
-                "type": "live_search",
-                "live_search": {
-                    "sources": ["x"]
-                }
-            }]
+            temperature=0.0,  # 安定した出力
+            max_tokens=300
         )
-        res_text = response.choices[0].message.content
+        res_text = response.choices[0].message.content.strip()
         print(f"Debug [{account}]: {res_text}")
         return res_text
     except Exception as e:
@@ -77,11 +80,14 @@ def main():
 
         if result and "ID:" in result and "Summary:" in result:
             try:
-                parts = result.split("/")
-                new_id = parts[0].replace("ID:", "").strip()
-                summary = parts[1].replace("Summary:", "").strip()
+                parts = result.split("\n")  # 改行で分割（形式変更対応）
+                id_line = parts[0].strip()
+                summary_line = parts[1].strip() if len(parts) > 1 else ""
+                
+                new_id = id_line.replace("ID:", "").strip()
+                summary = summary_line.replace("Summary:", "").strip()
 
-                if new_id.isdigit() and str(new_id) != str(last_id):
+                if new_id.isdigit() and int(new_id) > int(last_id):
                     db[account] = new_id
                     new_updates.append(f"👤 **{account}**\n📝 {summary}\n🔗 https://x.com/i/status/{new_id}")
             except Exception as e:
