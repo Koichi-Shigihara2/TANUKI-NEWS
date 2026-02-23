@@ -33,7 +33,7 @@ def save_db(db):
         json.dump(db, f, indent=4)
 
 def check_account(account, last_id):
-    prompt = f"""@{account} のX（旧Twitter）での**絶対に最新**の投稿を1つだけ探してください。
+    prompt = f"""@{account} のX（旧Twitter）での**絶対に最新**の投稿を1つだけリアルタイムで検索して探してください。ライブ検索機能を使って正確な最新データを取得してください。
 投稿ID（数値）と、投稿内容の簡潔な要約を以下の形式で**厳密に**返してください。
 IDが見つからなければ「None」とだけ返してください。
 
@@ -43,11 +43,12 @@ Summary: [100文字以内の要約]"""
 
     try:
         response = client.chat.completions.create(
-            model="grok-4-1-fast-reasoning",  # 有効な最新モデルに変更
+            model="grok-4",  # 有効なモデルに変更（xAI最新ドキュメントに基づく）
             messages=[
                 {"role": "system", "content": "あなたはXの最新投稿を正確に取得できるアシスタントです。必ず指定された形式で返してください。Xのリアルタイムデータを活用してください。"},
                 {"role": "user", "content": prompt}
             ],
+            tools=[{"type": "live_search", "sources": ["x"]}],  # ライブ検索を有効化（エラー回避構造）
             temperature=0.0,  # 安定した出力
             max_tokens=300
         )
