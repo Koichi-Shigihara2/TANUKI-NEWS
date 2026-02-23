@@ -3,7 +3,7 @@ import json
 import requests
 import re  # 正規表現で出力解析
 
-from openai import OpenAI  # ← これを追加（NameErrorの解決）
+from openai import OpenAI  # OpenAIクライアントのインポート
 
 # 環境変数の読み込み
 XAI_API_KEY = os.getenv("XAI_API_KEY")
@@ -43,7 +43,7 @@ Summary: [100文字以内の要約]"""
 
     try:
         response = client.chat.completions.create(
-            model="grok-beta",  # 安定モデル
+            model="grok-4-1-fast-reasoning",  # 有効な最新モデルに変更
             messages=[
                 {"role": "system", "content": "あなたはXの最新投稿を正確に取得できるアシスタントです。必ず指定された形式で返してください。Xのリアルタイムデータを活用してください。"},
                 {"role": "user", "content": prompt}
