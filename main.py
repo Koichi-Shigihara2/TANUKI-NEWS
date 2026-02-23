@@ -43,7 +43,7 @@ def check_account(account, last_id):
                 {"role": "system", "content": "Return format: ID: [numeric_id] / Summary: [text]. If nothing new, return 'None'."},
                 {"role": "user", "content": prompt}
             ],
-            # ↓ここが修正ポイントです
+            # ↓ ここを以下の構造に修正してください
             tools=[{
                 "type": "live_search",
                 "live_search": {
