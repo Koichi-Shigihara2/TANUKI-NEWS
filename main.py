@@ -51,13 +51,18 @@ def check_account(account, last_id):
     
     try:
         response = client.chat.completions.create(
-            model="grok-2", # 必要に応じてgrok-3等に変更してください
+            model="grok-2", 
             messages=[
                 {"role": "system", "content": "金融アナリストとして、新着投稿があれば 'ID: 投稿ID / Summary: 要約内容' の形式で回答してください。"},
                 {"role": "user", "content": prompt}
             ],
-            # ここを x_search から live_search に修正
-            tools=[{"type": "live_search"}] 
+            # tools の設定を詳細化
+            tools=[{
+                "type": "live_search",
+                "live_search": {
+                    "sources": ["x"]  # 検索ソースに X (旧Twitter) を指定
+                }
+            }]
         )
         return response.choices[0].message.content
     except Exception as e:
