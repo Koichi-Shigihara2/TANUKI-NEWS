@@ -41,6 +41,7 @@ def save_db(db):
         json.dump(db, f, indent=4, ensure_ascii=False)
 
 def check_account(account, last_id):
+    # 最新モデル (image_bb5bb2.png のリストより)
     target_model = "grok-4-1-fast-reasoning"
     
     prompt = (
@@ -56,11 +57,11 @@ def check_account(account, last_id):
                 {"role": "system", "content": "You are a precise data extractor focusing on X (Twitter) posts."},
                 {"role": "user", "content": prompt}
             ],
-            # 【重要修正】入れ子をなくし、sourcesを直下に配置
+            # 【最終修正】sourcesの中身を文字列ではなく型指定に合わせる
             tools=[
                 {
                     "type": "live_search",
-                    "sources": ["x"]
+                    "sources": [{"type": "x"}]
                 }
             ]
         )
@@ -71,6 +72,7 @@ def check_account(account, last_id):
         if "None" in res_text or not res_text:
             return None
 
+        # IDとサマリーの抽出
         id_match = re.search(r"ID[:\s]+(\d+)", res_text, re.IGNORECASE)
         summary_match = re.search(r"Summary[:\s]+(.*)", res_text, re.IGNORECASE | re.DOTALL)
 
@@ -92,6 +94,7 @@ def check_account(account, last_id):
 
 def send_discord(message):
     if not DISCORD_WEB_HOOK: return
+    # Discordの2000文字制限対策
     payload = {"content": message[:1900]}
     try:
         requests.post(DISCORD_WEB_HOOK, json=payload)
