@@ -6,7 +6,6 @@ from openai import OpenAI
 
 # 環境変数の読み込み
 XAI_API_KEY = os.getenv("XAI_API_KEY")
-# ご指摘通り DISCORD_WEB_HOOK に修正
 DISCORD_WEB_HOOK = os.getenv("DISCORD_WEB_HOOK")
 DB_FILE = "processed_ids.json"
 
@@ -42,7 +41,7 @@ def save_db(db):
         json.dump(db, f, indent=4, ensure_ascii=False)
 
 def check_account(account, last_id):
-    # 最新モデル grok-4-1-fast-reasoning を使用
+    # モデル名は最新のままでOK
     target_model = "grok-4-1-fast-reasoning"
     
     prompt = (
@@ -58,8 +57,15 @@ def check_account(account, last_id):
                 {"role": "system", "content": "You are a precise data extractor focusing on X (Twitter) posts."},
                 {"role": "user", "content": prompt}
             ],
-            # 最新のツール定義
-            tools=[{"type": "x_search"}]
+            # 【修正箇所】ツール名を 'x_search' から 'live_search' に戻しました
+            tools=[
+                {
+                    "type": "live_search",
+                    "live_search": {
+                        "sources": ["x"]
+                    }
+                }
+            ]
         )
         
         res_text = response.choices[0].message.content.strip()
@@ -68,7 +74,7 @@ def check_account(account, last_id):
         if "None" in res_text or not res_text:
             return None
 
-        # 正規表現の強化
+        # 正規表現
         id_match = re.search(r"ID[:\s]+(\d+)", res_text, re.IGNORECASE)
         summary_match = re.search(r"Summary[:\s]+(.*)", res_text, re.IGNORECASE | re.DOTALL)
 
@@ -89,7 +95,6 @@ def check_account(account, last_id):
         return None
 
 def send_discord(message):
-    # 変数名を DISCORD_WEB_HOOK に統一
     if not DISCORD_WEB_HOOK: return
     payload = {"content": message[:1900]}
     try:
