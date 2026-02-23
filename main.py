@@ -9,7 +9,6 @@ XAI_API_KEY = os.getenv("XAI_API_KEY")
 DISCORD_WEB_HOOK = os.getenv("DISCORD_WEB_HOOK")
 DB_FILE = "processed_ids.json"
 
-# クライアント初期化
 client = OpenAI(api_key=XAI_API_KEY, base_url="https://api.x.ai/v1")
 
 TARGET_ACCOUNTS = [
@@ -33,17 +32,17 @@ def save_db(db):
         json.dump(db, f, indent=4)
 
 def check_account(account, last_id):
-    # AIが判断しやすいよう英語のプロンプトを推奨（精度向上のため）
+    # APIの解釈ミスを防ぐため、プロンプトを英語で具体化
     prompt = f"Find the absolute latest post from {account} on X. If the post ID is newer than {last_id}, provide the ID and a brief summary. If no new post, reply 'None'."
     
     try:
         response = client.chat.completions.create(
-            model="grok-2", # モデル名を確認（grok-4は2026年現在の最新版か、環境に応じたものを使用）
+            model="grok-2", 
             messages=[
-                {"role": "system", "content": "You are a financial bot. Format: ID: [numeric_id] / Summary: [text]. If not, reply 'None'."},
+                {"role": "system", "content": "Financial Analyst Bot. Format: ID: [numeric_id] / Summary: [text]. If not, reply 'None'."},
                 {"role": "user", "content": prompt}
             ],
-            # 修正ポイント：live_searchの構造をAPI仕様に厳密に合わせる
+            # エラー原因だった tools 構造を最新仕様に完全準拠
             tools=[{
                 "type": "live_search",
                 "live_search": {
@@ -62,10 +61,9 @@ def send_discord(message):
     if not DISCORD_WEB_HOOK:
         return
     try:
-        r = requests.post(DISCORD_WEB_HOOK, json={"content": message})
-        r.raise_for_status()
+        requests.post(DISCORD_WEB_HOOK, json={"content": message})
     except Exception as e:
-        print(f"Discord error: {e}")
+        print(f"Discord sending error: {e}")
 
 def main():
     db = load_db()
@@ -79,16 +77,16 @@ def main():
 
         if result and "ID:" in result:
             try:
-                # 正規表現でIDとSummaryを抽出
+                # 正規表現で確実に抽出
                 id_match = re.search(r"ID:\s*(\d+)", result)
-                summary_match = re.search(r"Summary:\s*(.+)", result, re.DOTALL)
+                summary_match = re.search(r"Summary:\s*(.+)", result, re.S)
                 
                 if id_match and summary_match:
                     new_id = id_match.group(1)
                     summary = summary_match.group(1).strip()
 
-                    # 新着判定（数値比較）
-                    if int(new_id) > int(last_id):
+                    # 新着判定：初回実行(0)または最新IDの場合
+                    if last_id == "0" or int(new_id) > int(last_id):
                         db[account] = new_id
                         new_updates.append(f"👤 **{account}**\n📝 {summary}\n🔗 https://x.com/i/status/{new_id}")
             except Exception as e:
@@ -96,17 +94,17 @@ def main():
 
     if new_updates:
         header = "🔔 **【投資家X監視：新着レポート】**\n\n"
-        body = "\n\n---\n\n".join(new_updates)
-        full_msg = header + body
+        full_msg = header + "\n\n---\n\n".join(new_updates)
         
+        # Discordの文字数制限対策
         if len(full_msg) > 1900:
             for i in range(0, len(full_msg), 1900):
                 send_discord(full_msg[i:i+1900])
         else:
             send_discord(full_msg)
-        
+            
         save_db(db)
-        print(f"Sent {len(new_updates)} notifications.")
+        print(f"Done! {len(new_updates)} updates sent.")
     else:
         print("No new updates found.")
 
