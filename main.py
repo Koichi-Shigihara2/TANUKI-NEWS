@@ -1,7 +1,7 @@
 import os
 import json
 import requests
-from openai import OpenAI
+import re  # 追加: 正規表現で出力解析
 
 # 環境変数の読み込み
 XAI_API_KEY = os.getenv("XAI_API_KEY")
@@ -37,13 +37,11 @@ IDが見つからなければ「None」とだけ返してください。
 
 出力形式（これ以外は出力しない）:
 ID: [投稿の数値ID]
-Summary: [100文字以内の要約]
-
-最新の投稿IDが {last_id} より厳密に新しい場合のみIDを返し、それ以外は「None」としてください。"""
+Summary: [100文字以内の要約]"""
 
     try:
         response = client.chat.completions.create(
-            model="grok-4",  # 最新モデルに更新（grok-beta は無効なのでgrok-4に変更）
+            model="grok-beta",  # 安定モデルに変更
             messages=[
                 {"role": "system", "content": "あなたはXの最新投稿を正確に取得できるアシスタントです。必ず指定された形式で返してください。Xのリアルタイムデータを活用してください。"},
                 {"role": "user", "content": prompt}
@@ -52,7 +50,7 @@ Summary: [100文字以内の要約]
             max_tokens=300
         )
         res_text = response.choices[0].message.content.strip()
-        print(f"Debug [{account}]: {res_text}")
+        print(f"Debug [{account}]: {res_text}")  # ログ出力強化
         return res_text
     except Exception as e:
         print(f"Error checking {account}: {e}")
@@ -78,24 +76,26 @@ def main():
         last_id = db.get(account, "0")
         result = check_account(account, last_id)
 
-        if result and "ID:" in result and "Summary:" in result:
+        if result != "None":
             try:
-                parts = result.split("\n")  # 改行で分割（形式変更対応）
-                id_line = parts[0].strip()
-                summary_line = parts[1].strip() if len(parts) > 1 else ""
+                # 正規表現でIDとSummary抽出（柔軟対応）
+                id_match = re.search(r"ID:\s*(\d+)", result)
+                summary_match = re.search(r"Summary:\s*(.+)", result)
                 
-                new_id = id_line.replace("ID:", "").strip()
-                summary = summary_line.replace("Summary:", "").strip()
+                if id_match and summary_match:
+                    new_id = id_match.group(1)
+                    summary = summary_match.group(1).strip()
 
-                if new_id.isdigit() and int(new_id) > int(last_id):
-                    db[account] = new_id
-                    new_updates.append(f"👤 **{account}**\n📝 {summary}\n🔗 https://x.com/i/status/{new_id}")
+                    if new_id.isdigit() and int(new_id) > int(last_id):
+                        db[account] = new_id
+                        new_updates.append(f"👤 **{account}**\n📝 {summary}\n🔗 https://x.com/i/status/{new_id}")
+                else:
+                    print(f"Format error for {account}: {result}")
             except Exception as e:
                 print(f"Parse error for {account}: {e}")
 
     if new_updates:
         msg = "🔔 **【投資家X監視：新着レポート】**\n\n" + "\n\n---\n\n".join(new_updates)
-        # Discord制限対応
         if len(msg) > 1900:
             for i in range(0, len(msg), 1900):
                 send_discord(msg[i:i+1900])
