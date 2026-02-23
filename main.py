@@ -11,6 +11,7 @@ DB_FILE = "processed_ids.json"
 
 client = OpenAI(api_key=XAI_API_KEY, base_url="https://api.x.ai/v1")
 
+# 監視対象リスト
 TARGET_ACCOUNTS = [
     "@RayDalio", "@CathieDWood", "@LizAnnSonders", "@Ritholtz", "@BobEUnlimited",
     "@WarrenBuffett", "@chamath", "@naval", "@morganhousel", "@BrianFeroldi",
@@ -24,7 +25,7 @@ def load_db():
     if os.path.exists(DB_FILE):
         with open(DB_FILE, "r") as f:
             content = f.read().strip()
-            if not content or content == "": return {}
+            if not content: return {}
             try: return json.loads(content)
             except: return {}
     return {}
@@ -34,17 +35,15 @@ def save_db(db):
         json.dump(db, f, indent=4)
 
 def check_account(account, last_id):
-    # APIの混乱を防ぐため、明確に「最新の1件」を求める指示にしています
     prompt = f"Find the absolute latest post from {account} on X. If the post ID is newer than {last_id}, provide the ID and a brief summary. If no new post, reply 'None'."
-    
     try:
         response = client.chat.completions.create(
             model="grok-2", 
             messages=[
-                {"role": "system", "content": "You are a financial analyst bot. Format: ID: [numeric_id] / Summary: [text]. If nothing new, reply 'None'."},
+                {"role": "system", "content": "Return ONLY format: ID: [numeric_id] / Summary: [text]. If not, reply 'None'."},
                 {"role": "user", "content": prompt}
             ],
-            # 修正ポイント：画像のエラーログに基づき、正しいネスト構造に修正
+            # 重要：画像のエラーログに基づき、正しい構造に修正
             tools=[{
                 "type": "live_search",
                 "live_search": {
@@ -60,57 +59,38 @@ def check_account(account, last_id):
         return "None"
 
 def send_discord(message):
-    if not DISCORD_WEB_HOOK:
-        print("Error: DISCORD_WEB_HOOK is missing.")
-        return
-    try:
-        r = requests.post(DISCORD_WEB_HOOK, json={"content": message})
-        r.raise_for_status()
-    except Exception as e:
-        print(f"Discord sending error: {e}")
+    if not DISCORD_WEB_HOOK: return
+    requests.post(DISCORD_WEB_HOOK, json={"content": message})
 
 def main():
     db = load_db()
     new_updates = []
-
     print(f"Checking {len(TARGET_ACCOUNTS)} accounts...")
 
     for account in TARGET_ACCOUNTS:
         last_id = db.get(account, "0")
         result = check_account(account, last_id)
-
+        
         if result and "ID:" in result:
-            try:
-                # 正規表現でIDとSummaryを確実に抽出
-                id_match = re.search(r"ID:\s*(\d+)", result)
-                summary_match = re.search(r"Summary:\s*(.+)", result, re.S)
-                
-                if id_match and summary_match:
-                    new_id = id_match.group(1)
-                    summary = summary_match.group(1).strip()
-
-                    # 初回(last_id="0") または 新しいIDの場合に通知
-                    if last_id == "0" or int(new_id) > int(last_id):
-                        db[account] = new_id
-                        new_updates.append(f"👤 **{account}**\n📝 {summary}\n🔗 https://x.com/i/status/{new_id}")
-            except Exception as e:
-                print(f"Parse error for {account}: {e}")
+            id_match = re.search(r"ID:\s*(\d+)", result)
+            summary_match = re.search(r"Summary:\s*(.+)", result, re.S)
+            
+            if id_match and summary_match:
+                new_id = id_match.group(1)
+                # 初回実行時(0)または新しい投稿がある場合に通知
+                if last_id == "0" or int(new_id) > int(last_id):
+                    db[account] = new_id
+                    new_updates.append(f"👤 **{account}**\n📝 {summary_match.group(1).strip()}\n🔗 https://x.com/i/status/{new_id}")
 
     if new_updates:
         header = "🔔 **【投資家X監視：新着レポート】**\n\n"
-        full_msg = header + "\n\n---\n\n".join(new_updates)
-        
-        # Discordの2000文字制限対策（1900文字で分割）
-        if len(full_msg) > 1900:
-            for i in range(0, len(full_msg), 1900):
-                send_discord(full_msg[i:i+1900])
-        else:
-            send_discord(full_msg)
-            
+        msg = header + "\n\n---\n\n".join(new_updates)
+        send_discord(msg[:1900])
         save_db(db)
-        print(f"Done! {len(new_updates)} updates sent to Discord.")
+        print(f"Done! {len(new_updates)} notifications sent.")
     else:
-        print("No new updates to notify in this run.")
+        print("No new updates found.")
 
 if __name__ == "__main__":
     main()
+    
