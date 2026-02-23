@@ -43,7 +43,7 @@ Summary: [100文字以内の要約]
 
     try:
         response = client.chat.completions.create(
-            model="grok-beta",  # 最新モデルに更新（grok-2 より推奨）
+            model="grok-4",  # 最新モデルに更新（grok-beta は無効なのでgrok-4に変更）
             messages=[
                 {"role": "system", "content": "あなたはXの最新投稿を正確に取得できるアシスタントです。必ず指定された形式で返してください。Xのリアルタイムデータを活用してください。"},
                 {"role": "user", "content": prompt}
