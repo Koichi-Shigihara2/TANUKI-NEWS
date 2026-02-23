@@ -43,7 +43,7 @@ def check_account(account, last_id):
                 {"role": "system", "content": "Return format: ID: [numeric_id] / Summary: [text]. If nothing new, return 'None'."},
                 {"role": "user", "content": prompt}
             ],
-            # ↓ ここを以下の構造に修正してください
+            # ↓ この構造（入れ子）が正解です
             tools=[{
                 "type": "live_search",
                 "live_search": {
