@@ -41,7 +41,6 @@ def save_db(db):
         json.dump(db, f, indent=4, ensure_ascii=False)
 
 def check_account(account, last_id):
-    # モデル名は最新のままでOK
     target_model = "grok-4-1-fast-reasoning"
     
     prompt = (
@@ -57,13 +56,11 @@ def check_account(account, last_id):
                 {"role": "system", "content": "You are a precise data extractor focusing on X (Twitter) posts."},
                 {"role": "user", "content": prompt}
             ],
-            # 【修正箇所】ツール名を 'x_search' から 'live_search' に戻しました
+            # 【重要修正】入れ子をなくし、sourcesを直下に配置
             tools=[
                 {
                     "type": "live_search",
-                    "live_search": {
-                        "sources": ["x"]
-                    }
+                    "sources": ["x"]
                 }
             ]
         )
@@ -74,7 +71,6 @@ def check_account(account, last_id):
         if "None" in res_text or not res_text:
             return None
 
-        # 正規表現
         id_match = re.search(r"ID[:\s]+(\d+)", res_text, re.IGNORECASE)
         summary_match = re.search(r"Summary[:\s]+(.*)", res_text, re.IGNORECASE | re.DOTALL)
 
