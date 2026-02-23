@@ -11,7 +11,6 @@ DB_FILE = "processed_ids.json"
 
 client = OpenAI(api_key=XAI_API_KEY, base_url="https://api.x.ai/v1")
 
-# 監視対象リスト
 TARGET_ACCOUNTS = [
     "@RayDalio", "@CathieDWood", "@LizAnnSonders", "@Ritholtz", "@BobEUnlimited",
     "@WarrenBuffett", "@chamath", "@naval", "@morganhousel", "@BrianFeroldi",
@@ -25,7 +24,7 @@ def load_db():
     if os.path.exists(DB_FILE):
         with open(DB_FILE, "r") as f:
             content = f.read().strip()
-            if not content: return {}
+            if not content: return {} # 空白対策
             try: return json.loads(content)
             except: return {}
     return {}
@@ -38,12 +37,12 @@ def check_account(account, last_id):
     prompt = f"Find the absolute latest post from {account} on X. If the post ID is newer than {last_id}, provide the ID and a brief summary. If no new post, reply 'None'."
     try:
         response = client.chat.completions.create(
-            model="grok-2", 
+            model="grok-2", # grok-4から修正
             messages=[
-                {"role": "system", "content": "Return ONLY format: ID: [numeric_id] / Summary: [text]. If not, reply 'None'."},
+                {"role": "system", "content": "Format: ID: [numeric_id] / Summary: [text]. If not, reply 'None'."},
                 {"role": "user", "content": prompt}
             ],
-            # 重要：画像のエラーログに基づき、正しい構造に修正
+            # 修正：live_searchの内部にsourcesを入れる正しい構造
             tools=[{
                 "type": "live_search",
                 "live_search": {
@@ -70,21 +69,18 @@ def main():
     for account in TARGET_ACCOUNTS:
         last_id = db.get(account, "0")
         result = check_account(account, last_id)
-        
         if result and "ID:" in result:
             id_match = re.search(r"ID:\s*(\d+)", result)
             summary_match = re.search(r"Summary:\s*(.+)", result, re.S)
-            
             if id_match and summary_match:
                 new_id = id_match.group(1)
-                # 初回実行時(0)または新しい投稿がある場合に通知
+                # 初回または新着IDの場合に通知
                 if last_id == "0" or int(new_id) > int(last_id):
                     db[account] = new_id
                     new_updates.append(f"👤 **{account}**\n📝 {summary_match.group(1).strip()}\n🔗 https://x.com/i/status/{new_id}")
 
     if new_updates:
-        header = "🔔 **【投資家X監視：新着レポート】**\n\n"
-        msg = header + "\n\n---\n\n".join(new_updates)
+        msg = "🔔 **【投資家X監視：新着レポート】**\n\n" + "\n\n---\n\n".join(new_updates)
         send_discord(msg[:1900])
         save_db(db)
         print(f"Done! {len(new_updates)} notifications sent.")
@@ -93,4 +89,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
