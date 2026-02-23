@@ -22,10 +22,8 @@ TARGET_ACCOUNTS = [
 def load_db():
     if os.path.exists(DB_FILE):
         with open(DB_FILE, "r") as f:
-            try:
-                return json.load(f)
-            except:
-                return {}
+            try: return json.load(f)
+            except: return {}
     return {}
 
 def save_db(db):
@@ -33,23 +31,25 @@ def save_db(db):
         json.dump(db, f, indent=4)
 
 def check_account(account, last_id):
-    # 検索をより具体的にし、直近の投稿を1つ確実に取るように指示
-    prompt = f"Find the most recent post from {account} on X. If the post ID is newer than {last_id}, provide the ID and a brief summary. If no new post, reply 'None'."
+    prompt = f"Find the absolute latest post from {account} on X. If the post ID is strictly newer than {last_id}, provide the numeric ID and a brief summary. If no new post, reply 'None'."
     
     try:
         response = client.chat.completions.create(
             model="grok-2", 
             messages=[
-                {"role": "system", "content": "You are a financial bot. If there is a new post, reply ONLY in this format: ID: [post_id] / Summary: [text]. If not, reply 'None'."},
+                {"role": "system", "content": "Return format: ID: [numeric_id] / Summary: [text]. If nothing new, return 'None'."},
                 {"role": "user", "content": prompt}
             ],
+            # 修正：live_searchの定義をAPIの期待する構造に変更
             tools=[{
                 "type": "live_search",
-                "live_search": {"sources": ["x"]}
+                "live_search": {
+                    "sources": ["x"]
+                }
             }]
         )
         res_text = response.choices[0].message.content
-        print(f"Debug [{account}]: {res_text}") # ログでAIの回答を確認できるようにする
+        print(f"Debug [{account}]: {res_text}")
         return res_text
     except Exception as e:
         print(f"Error checking {account}: {e}")
@@ -57,8 +57,13 @@ def check_account(account, last_id):
 
 def send_discord(message):
     if not DISCORD_WEB_HOOK:
+        print("Webhook URL is missing.")
         return
-    requests.post(DISCORD_WEB_HOOK, json={"content": message})
+    try:
+        r = requests.post(DISCORD_WEB_HOOK, json={"content": message})
+        r.raise_for_status()
+    except Exception as e:
+        print(f"Discord sending error: {e}")
 
 def main():
     db = load_db()
@@ -70,33 +75,30 @@ def main():
         last_id = db.get(account, "0")
         result = check_account(account, last_id)
 
-        if result and "None" not in result and "ID:" in result:
+        if result and "ID:" in result and "Summary:" in result:
             try:
                 parts = result.split("/")
                 new_id = parts[0].replace("ID:", "").strip()
                 summary = parts[1].replace("Summary:", "").strip()
 
-                if str(new_id) != str(last_id):
+                if new_id.isdigit() and str(new_id) != str(last_id):
                     db[account] = new_id
                     new_updates.append(f"👤 **{account}**\n📝 {summary}\n🔗 https://x.com/i/status/{new_id}")
             except Exception as e:
                 print(f"Parse error for {account}: {e}")
-                continue
 
     if new_updates:
-        # 1通にまとめて送信
-        message_body = "🔔 **【投資家X監視：新着レポート】**\n\n" + "\n\n---\n\n".join(new_updates)
-        
-        # 分割送信（Discordの2000文字制限対策）
-        if len(message_body) > 1900:
-            for i in range(0, len(message_body), 1900):
-                send_discord(message_body[i:i+1900])
+        msg = "🔔 **【投資家X監視：新着レポート】**\n\n" + "\n\n---\n\n".join(new_updates)
+        # Discord制限対応
+        if len(msg) > 1900:
+            for i in range(0, len(msg), 1900):
+                send_discord(msg[i:i+1900])
         else:
-            send_discord(message_body)
-            
+            send_discord(msg)
         save_db(db)
+        print(f"Done! {len(new_updates)} notifications sent.")
     else:
-        print("No new updates to notify.")
+        print("No new updates found in this run.")
 
 if __name__ == "__main__":
     main()
