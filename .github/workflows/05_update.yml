@@ -2,8 +2,10 @@ name: MACRO PULSE — Daily Update
 
 on:
   schedule:
-    # 22:00 UTC = 07:00 JST
+    # 毎朝 07:00 JST = 22:00 UTC（日次データ収集）
     - cron: "0 22 * * *"
+    # 毎週日曜 06:00 JST = 21:00 UTC（スケジュール自動更新）
+    - cron: "0 21 * * 0"
   workflow_dispatch:
     inputs:
       target_date:
@@ -14,6 +16,10 @@ on:
         description: "再計算モード (true で Surprise を全件再計算)"
         required: false
         default: "false"
+      update_schedule:
+        description: "スケジュール更新モード (true で indicator_schedule.csv を自動更新)"
+        required: false
+        default: "false"
 
 permissions:
   contents: write
@@ -22,9 +28,61 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  # ── 毎週日曜: スケジュール自動更新 ───────────────────────────
+  update-schedule:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # 日曜の定期実行 OR 手動で update_schedule=true の場合のみ実行
+    if: |
+      github.event_name == 'schedule' && github.event.schedule == '0 21 * * 0'
+      || github.event_name == 'workflow_dispatch' && github.event.inputs.update_schedule == 'true'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: 05_requirements.txt
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r 05_requirements.txt
+
+      - name: Ensure data directory
+        run: mkdir -p data
+
+      - name: Update indicator schedule
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: python 05_main.py --update-schedule
+
+      - name: Commit schedule CSV
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name  "github-actions[bot]"
+          git add data/05_indicator_schedule.csv
+          if git diff --cached --quiet; then
+            echo "No schedule changes."
+          else
+            git commit -m "chore: auto-update schedule $(date -u +'%Y-%m-%d')"
+            git push
+          fi
+
+  # ── 毎日: データ収集 ─────────────────────────────────────────
   update:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # 日曜以外の定期実行 OR 手動実行（update_schedule=true 以外）
+    if: |
+      github.event_name == 'schedule' && github.event.schedule == '0 22 * * *'
+      || github.event_name == 'workflow_dispatch' && github.event.inputs.update_schedule != 'true'
 
     steps:
       - name: Checkout
