@@ -1,17 +1,1 @@
 指標名,発表予定日,fred_id,閾値_強気,閾値_弱気,単位,actual,備考
-Average Hourly Earnings YoY,,AHETPI,0.0,0.0,%YoY,,
-Durable Goods Orders,,DGORDER,0.0,0.0,%MoM,,
-ISM Manufacturing PMI,,,50.0,50.0,index,,
-Initial Jobless Claims,,ICSA,250000.0,300000.0,件,,
-Michigan Consumer Sentiment,,UMCSENT,80.0,65.0,index,,
-New Residential Starts,,HOUST,1400.0,1200.0,千件,,
-Initial Jobless Claims,2026-03-16,ICSA,250000.0,300000.0,件,,FRED Release Calendar 自動取得
-ISM Manufacturing PMI,2026-04-01,,50.0,50.0,index,,製造業: 米国第1営業日 自動算出
-Average Hourly Earnings YoY,2026-04-03,AHETPI,0.0,0.0,%YoY,,FRED Release Calendar 自動取得
-Durable Goods Orders,2026-04-09,DGORDER,0.0,0.0,%MoM,,FRED Release Calendar 自動取得
-Initial Jobless Claims,2026-04-15,ICSA,250000.0,300000.0,件,,FRED Release Calendar 自動取得
-ISM Manufacturing PMI,2026-05-01,,50.0,50.0,index,,製造業: 米国第1営業日 自動算出
-Average Hourly Earnings YoY,2026-05-08,AHETPI,0.0,0.0,%YoY,,FRED Release Calendar 自動取得
-Initial Jobless Claims,2026-05-15,ICSA,250000,300000,件,,FRED Release Calendar 自動取得
-ISM Manufacturing PMI,2026-06-01,,50.0,50.0,index,,製造業: 米国第1営業日 自動算出
-Average Hourly Earnings YoY,2026-06-05,AHETPI,0,0,%YoY,,FRED Release Calendar 自動取得
