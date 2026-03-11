@@ -52,7 +52,7 @@ async function loadEconomicData() {
         
         // CSVファイルからのフォールバック
         if (economicData.length === 0) {
-            const csvResponse = await fetch('data/05_economic_history.csv');
+            const csvResponse = await fetch('data/economic_history.csv');
             if (csvResponse.ok) {
                 const csvText = await csvResponse.text();
                 economicData = parseCSVData(csvText);
