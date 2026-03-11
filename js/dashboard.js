@@ -134,9 +134,15 @@ function updateCharts() {
     updateCorrelationChart();
 }
 
-function updateSurpriseChart() {
-    const canvas = document.getElementById('surpriseChart');
-    if (!canvas) return;
+unction updateCorrelationChart() {
+    const chartDom = document.getElementById('correlationChart');
+    if (!chartDom) return;
+
+    // 既存インスタンスを破棄してから再生成
+    if (correlationChart) {
+        correlationChart.dispose();
+    }
+    correlationChart = echarts.init(chartDom);
     const ctx = canvas.getContext('2d');
     
     const sortedData = [...economicData]
