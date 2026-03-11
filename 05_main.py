@@ -497,101 +497,47 @@ def _stooq(symbol: str, target_date: date):
 ZQ_MONTH_CODE = {1:'F',2:'G',3:'H',4:'J',5:'K',6:'M',
                  7:'N',8:'Q',9:'U',10:'V',11:'X',12:'Z'}
 
-def _zq_ticker(target_date: date) -> tuple:
-    """(ticker文字列, future_date) を返すユーティリティ。"""
-    y = target_date.year + (target_date.month + 11) // 12
-    m = (target_date.month + 11) % 12 + 1
-    if m == 0:
-        m = 12
-        y += 1
-    future_date = date(y, m, 1)
-    mc  = ZQ_MONTH_CODE[future_date.month]
-    yr2 = str(future_date.year)[-2:]   # 例: '27'
-    return f"ZQ{mc}{yr2}", future_date   # 例: 'ZQH27'
-
-
-def _fmp_futures(ticker: str, target_date: date) -> float | None:
+def get_zq_futures(target_date: date, fred=None):
     """
-    FMP API v3 で先物の終値を取得。
-    エンドポイント: /v3/historical-price-full/{ticker}
-    ティッカー例: ZQH27 → FMPでは 'ZQH27' または '/ZQH27' を試行。
-    """
-    api_key = os.environ.get("FMP_API_KEY", "")
-    if not api_key:
-        logger.warning("FMP_API_KEY not set")
-        return None
+    1年後の市場期待FF金利を算出し (ticker, price, implied_rate) を返す。
 
-    d1 = (target_date - timedelta(days=10)).strftime("%Y-%m-%d")
-    d2 = target_date.strftime("%Y-%m-%d")
+    算出方法:
+      FRED T1YFF（1年物国債利回り − FF金利スプレッド）を使用。
+        implied_rate = ff_current + T1YFF
+      ※ T1YFF > 0 なら市場は1年後に金利上昇を織り込み（TIGHTENING方向）
+        T1YFF < 0 なら市場は1年後に金利低下を織り込み（EASING方向）
 
-    # FMPのCBOT先物はティッカーをそのまま渡す
-    for sym in [ticker, f"/{ticker}"]:
-        url = (f"https://financialmodelingprep.com/api/v3/historical-price-full/{sym}"
-               f"?from={d1}&to={d2}&apikey={api_key}")
-        try:
-            r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
-            if r.status_code == 200:
-                data = r.json()
-                hist = data.get("historical", [])
-                if hist:
-                    # 日付降順で最新終値を返す
-                    latest = sorted(hist, key=lambda x: x["date"], reverse=True)[0]
-                    price = float(latest["close"])
-                    logger.info(f"FMP ZQ [{sym}]: {price} (date={latest['date']})")
-                    return price
-                else:
-                    logger.info(f"FMP ZQ [{sym}]: no data")
-            else:
-                logger.info(f"FMP ZQ [{sym}]: HTTP {r.status_code}")
-        except Exception as e:
-            logger.warning(f"FMP ZQ [{sym}]: {e}")
-
-    return None
-
-
-def get_zq_futures(target_date: date):
-    """
-    12ヶ月先のZQ先物価格を取得し (ticker, price, implied_rate) を返す。
-
-    取得順:
-      1. FMP API  — ZQH27 / /ZQH27
-      2. stooq    — ZQH27 / ZQH7 / zqh27 / zqh27.cbt (フォールバック)
-
+    ticker欄には "FRED:T1YFF" を記録。
+    price欄には T1YFF の値（スプレッド）を記録。
     失敗時は (None, None, None)
     """
-    ticker, future_date = _zq_ticker(target_date)
-    mc_l = ticker[2].lower()
-    yr2  = ticker[3:]
-    yr1  = yr2[-1]
-
-    logger.info(f"ZQ target: {ticker} ({future_date.strftime('%Y-%m')})")
-
-    # ── 1st: FMP ────────────────────────────────────────────────
-    price = _fmp_futures(ticker, target_date)
-
-    # ── 2nd: stooq フォールバック ────────────────────────────────
-    if price is None:
-        stooq_candidates = [
-            ticker,                        # ZQH27
-            f"ZQ{ticker[2]}{yr1}",         # ZQH7
-            f"zq{mc_l}{yr2}",              # zqh27
-            f"zq{mc_l}{yr2}.cbt",          # zqh27.cbt
-            f"zq{mc_l}{yr1}.cbt",          # zqh7.cbt
-        ]
-        for t in stooq_candidates:
-            logger.info(f"stooq ZQ attempt: {t}")
-            price = _stooq(t, target_date)
-            if price is not None:
-                ticker = t.upper()
-                break
-
-    if price is None:
-        logger.warning("ZQ futures: all sources failed (FMP + stooq)")
+    if fred is None:
+        logger.warning("T1YFF: fred client unavailable")
         return None, None, None
 
-    implied_rate = round(100.0 - price, 4)
-    logger.info(f"ZQ price: {price} → implied FF rate: {implied_rate}% (ticker={ticker})")
-    return ticker.upper(), price, implied_rate
+    # T1YFF: 1年物国債利回り − FF実効金利
+    t1yff, obs_date = fred_latest(fred, "T1YFF", target_date, lookback=30)
+    if t1yff is None:
+        logger.warning("T1YFF: could not retrieve from FRED")
+        return None, None, None
+
+    # FF現在値
+    ff_current = get_ff_current(fred)
+    if ff_current is None:
+        logger.warning("T1YFF: FF current rate unavailable, cannot compute implied rate")
+        return None, None, None
+
+    implied_rate = round(ff_current + t1yff, 4)
+    logger.info(
+        f"T1YFF (FRED): {t1yff:+.4f}% (obs={obs_date}) | "
+        f"FF current: {ff_current}% → implied 1Y FF: {implied_rate}%"
+    )
+    # cuts_implied: (ff_current - implied_rate) / 0.25
+    cuts = round((ff_current - implied_rate) / 0.25, 2)
+    logger.info(f"Implied cuts in 12M: {cuts:+.2f} 回 (25bp each)")
+
+    # price欄 = T1YFFスプレッド値（ZQ価格の代替として記録）
+    return "FRED:T1YFF", round(t1yff, 4), implied_rate
 
 
 def get_ff_current(fred):
@@ -791,20 +737,20 @@ def update_fed_context(target_date: date, fred):
     else:
         ctx_df = pd.DataFrame(columns=FED_CONTEXT_COLUMNS)
 
-    # ZQ先物
-    zq_ticker, zq_price, zq_rate = get_zq_futures(target_date)
+    # T1YFF ベース期待FF金利（fredを渡す）
+    zq_ticker, zq_price, zq_rate = get_zq_futures(target_date, fred)
 
-    # FF金利
+    # FF金利（get_zq_futures内で既に取得済みだがCSV記録用に再取得）
     ff_current = get_ff_current(fred)
     if ff_current is None:
         logger.warning("FF rate unavailable, using 4.375 as fallback")
         ff_current = 4.375
 
-    # 利下げ回数計算
+    # 利下げ回数計算（implied_rate = zq_rate が取得できた場合のみ）
     cuts_implied = None
-    if zq_rate is not None:
+    if zq_rate is not None and ff_current is not None:
         cuts_implied = round((ff_current - zq_rate) / 0.25, 2)
-        logger.info(f"Cuts implied: {cuts_implied:+.2f} (FF={ff_current}% → ZQ={zq_rate}%)")
+        logger.info(f"Cuts implied: {cuts_implied:+.2f} 回 (FF={ff_current}% → 1Y expected={zq_rate}%)")
 
     # FOMC声明取得 & Gemini分析（月1回：当月まだ分析していなければ実行）
     record_month = target_date.strftime("%Y-%m")
