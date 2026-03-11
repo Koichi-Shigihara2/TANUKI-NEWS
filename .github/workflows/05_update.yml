@@ -58,20 +58,21 @@ jobs:
       - name: Ensure data directory
         run: mkdir -p data
 
-      - name: Update indicator schedule
+      - name: Update indicator schedule + Fed context
         env:
-          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          FRED_API_KEY:    ${{ secrets.FRED_API_KEY }}
+          GEMINI_API_KEY:  ${{ secrets.GEMINI_API_KEY }}
         run: python 05_main.py --update-schedule
 
-      - name: Commit schedule CSV
+      - name: Commit schedule + fed context CSV
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name  "github-actions[bot]"
-          git add data/05_indicator_schedule.csv
+          git add data/05_indicator_schedule.csv data/05_fed_context.csv
           if git diff --cached --quiet; then
             echo "No schedule changes."
           else
-            git commit -m "chore: auto-update schedule $(date -u +'%Y-%m-%d')"
+            git commit -m "chore: auto-update schedule+fed-context $(date -u +'%Y-%m-%d')"
             git push
           fi
 
