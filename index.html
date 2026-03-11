@@ -48,7 +48,7 @@
                 <div class="text-right">
                     <div class="text-sm text-gray-500">最終更新</div>
                     <div id="lastUpdate" class="text-lg font-semibold text-gray-800">--</div>
-                    <button onclick="refreshData()" class="mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    <button onclick="loadEconomicData()"" class="mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
                         <i class="fas fa-sync-alt mr-2"></i>更新
                     </button>
                 </div>
@@ -135,10 +135,10 @@
                     最新の経済指標
                 </h3>
                 <div class="flex items-center space-x-4">
-                    <select id="indicatorFilter" class="border border-gray-300 rounded-lg px-3 py-2" onchange="filterTable()">
+                    <select id="indicatorFilter" class="border border-gray-300 rounded-lg px-3 py-2" onchange="updateTable()">
                         <option value="">すべての指標</option>
                     </select>
-                    <input type="date" id="dateFilter" class="border border-gray-300 rounded-lg px-3 py-2" onchange="filterTable()">
+                    <input type="date" id="dateFilter" class="border border-gray-300 rounded-lg px-3 py-2" onchange="updateTable()">
                 </div>
             </div>
             
