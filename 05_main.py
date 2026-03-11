@@ -762,9 +762,24 @@ Respond ONLY in this exact JSON format (no markdown, no extra text):
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
         payload = {"contents": [{"parts": [{"text": prompt}]}],
                    "generationConfig": {"temperature": 0.1, "maxOutputTokens": 300}}
-        r = requests.post(url, json=payload,
-                          headers={"Content-Type": "application/json"}, timeout=30)
-        r.raise_for_status()
+
+        # 429 Too Many Requests に備えてリトライ（最大3回、指数バックオフ）
+        max_retries = 3
+        for attempt in range(max_retries):
+            r = requests.post(url, json=payload,
+                              headers={"Content-Type": "application/json"}, timeout=30)
+            if r.status_code == 429:
+                wait = 15 * (2 ** attempt)  # 15秒 → 30秒 → 60秒
+                logger.warning(f"Gemini API 429 rate limit. Retry {attempt+1}/{max_retries} in {wait}s")
+                if attempt < max_retries - 1:
+                    time.sleep(wait)
+                    continue
+                else:
+                    logger.warning("Gemini API: rate limit exceeded after retries. Using fallback.")
+                    return _fallback_regime(ff_current, zq_rate, cuts_implied)
+            r.raise_for_status()
+            break
+
         data = r.json()
         raw = data["candidates"][0]["content"]["parts"][0]["text"].strip()
         # JSON抽出
