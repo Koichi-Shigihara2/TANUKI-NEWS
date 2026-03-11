@@ -1,3 +1,3 @@
 指標名,リリース日,実際値,期待値(Consensus),前回値,Surprise(実際-期待),YoY変化(%),S&P500,Nasdaq,10Y-2Y(YieldCurve),付随データ,市場反応(自動生成),更新日時,データソース
-No Indicators,2026-03-10,,,,,,6781.48,24956.47,0.58,{},Surprise: N/A; S&P down 0.21%,2026-03-11 04:48:06,FRED/stooq
-Yield Curve 10Y-2Y,2026-03-10,0.58,,,,,6781.48,24956.47,0.58,{},Daily yield curve record,2026-03-11 04:48:06,FRED T10Y2Y
+No Indicators,2026-03-10,,,,,,6781.48,24956.47,0.58,{},Surprise: N/A; S&P down 0.21%,2026-03-11 04:59:32,FRED/stooq
+Yield Curve 10Y-2Y,2026-03-10,0.58,,,,,6781.48,24956.47,0.58,{},Daily yield curve record,2026-03-11 04:59:32,FRED T10Y2Y
