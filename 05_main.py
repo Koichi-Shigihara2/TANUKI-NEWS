@@ -296,6 +296,8 @@ def fred_release_dates(fred_api_key: str, days_ahead: int = 90) -> dict[str, lis
         results[ind_name] = unique_dates
         logger.info(f"[FRED Release] {ind_name}: {[str(d) for d in unique_dates]}")
 
+    return results
+
 
 # ─────────────────────────────────────────────────────────────────
 #  スケジュール CSV 自動更新
