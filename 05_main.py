@@ -124,6 +124,13 @@ INDICATOR_CONFIG = {
 #  米国祝日計算
 # ─────────────────────────────────────────────────────────────────
 
+def nth_weekday(year: int, month: int, weekday: int, n: int) -> date:
+    """第n weekday（0=月曜, 4=金曜）を返すトップレベルユーティリティ。"""
+    first = date(year, month, 1)
+    delta = (weekday - first.weekday()) % 7
+    return first + timedelta(days=delta + (n - 1) * 7)
+
+
 def us_holidays(year: int) -> set:
     """
     米国の主要連邦祝日を返す（ISM 発表日計算に使用）。
@@ -131,12 +138,6 @@ def us_holidays(year: int) -> set:
           レイバーデー・コロンバスデー・退役軍人の日・感謝祭・クリスマス
     """
     from datetime import date as d
-
-    def nth_weekday(year, month, weekday, n):
-        """第n weekday（0=月曜）を返す"""
-        first = d(year, month, 1)
-        delta = (weekday - first.weekday()) % 7
-        return first + timedelta(days=delta + (n - 1) * 7)
 
     def last_weekday(year, month, weekday):
         """最終 weekday を返す"""
@@ -758,7 +759,7 @@ Respond ONLY in this exact JSON format (no markdown, no extra text):
 {{"regime":"EASING","dominant_concern":"EMPLOYMENT_FOCUS","dominant_label":"雇用重視","ai_reason":"日本語で100字以内で判断理由を記載。声明の具体的な文言に言及すること。"}}"""
 
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
         payload = {"contents": [{"parts": [{"text": prompt}]}],
                    "generationConfig": {"temperature": 0.1, "maxOutputTokens": 300}}
         r = requests.post(url, json=payload,
