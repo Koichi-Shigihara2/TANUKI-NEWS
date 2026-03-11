@@ -1,21 +1,24 @@
 #!/usr/bin/env python3
 """
-MACRO PULSE — Economic Indicators Auto-Update  v4.0
+MACRO PULSE — Economic Indicators Auto-Update  v4.1
 ====================================================
-変更点 (v3 → v4):
-  [発表検知]  FRED observation_date マッチング（ほぼ失敗）→
-              data/05_indicator_schedule.csv を起点にした確定的な検知に変更。
-  [期待値]    FMP / スクレイピング依存を廃止。
-              優先: ① CSV 既存値 → ② actual_as_forecast（実績=予想, Surprise=0）
-  [再計算]    --recalc フラグ: ブラウザ側で予想値が事後入力された後、
-              CSV の forecast_source / Surprise を一括更新する。
-  [ISM PMI]  FRED 未収録。schedule.csv の actual 列に手入力 → override で取込。
-  [列追加]    forecast_source 列を CSV に追加。
-              'user'               = ユーザー事前入力（LocalStorage → CSV 書き戻し時）
-              'user_retroactive'   = 事後入力（再計算済み）
-              'actual_as_forecast' = 予想なし自動代替（Surprise=0, グレー表示）
-              'FRED'               = FRED から直接取得
-              'none'               = No Indicators / YieldCurve 行
+変更点 (v4.0 → v4.1):
+  [スケジュール自動更新]
+    --update-schedule フラグ（毎週日曜に実行）:
+      1. FRED Release Calendar API で今後60日分の発表予定日を取得
+         対象: Initial Jobless Claims / New Residential Starts /
+               Durable Goods Orders / Average Hourly Earnings YoY /
+               Michigan Consumer Sentiment
+      2. ISM Manufacturing PMI（製造業）は米国営業日計算で発表予定日を内部算出:
+           製造業 = 毎月第1営業日（米国祝日除く）
+         ※ 非製造業（サービス業）は監視対象外
+      3. 未登録の行のみ 05_indicator_schedule.csv に追記（既存行は変更しない）
+
+変更点 (v3 → v4.0):
+  [発表検知]  FRED observation_date マッチング → schedule.csv 起点に変更
+  [期待値]    actual_as_forecast フォールバック実装
+  [再計算]    --recalc フラグ実装
+  [列追加]    forecast_source 列追加
 """
 
 import os, sys, time, json, logging, argparse, traceback
@@ -53,6 +56,8 @@ SCHEDULE_COLUMNS = [
 INDICATOR_CONFIG = {
     "ISM Manufacturing PMI": {
         "fred_id": "",                # FRED 未収録。schedule.csv の actual 列から手入力
+        "fred_release_id": None,      # FRED Release Calendar 対象外
+        "ism_rule": "mfg",            # 米国第1営業日算出
         "companion_key":  "Mfg Employment",
         "companion_fred": "MANEMP",
         "threshold_bull": 50.0,
@@ -61,6 +66,7 @@ INDICATOR_CONFIG = {
     },
     "New Residential Starts": {
         "fred_id": "HOUST",
+        "fred_release_id": 235,
         "companion_key":  "Mortgage Rate 30Y",
         "companion_fred": "MORTGAGE30US",
         "threshold_bull": 1400,
@@ -69,6 +75,7 @@ INDICATOR_CONFIG = {
     },
     "Durable Goods Orders": {
         "fred_id": "DGORDER",
+        "fred_release_id": 110,
         "companion_key":  "Durable Ex-Transport",
         "companion_fred": "ADXTNO",
         "threshold_bull": 0,
@@ -77,6 +84,7 @@ INDICATOR_CONFIG = {
     },
     "Initial Jobless Claims": {
         "fred_id": "ICSA",
+        "fred_release_id": 321,
         "companion_key":  "4W Moving Avg",
         "companion_fred": "IC4WSA",
         "threshold_bull": 250000,
@@ -85,6 +93,7 @@ INDICATOR_CONFIG = {
     },
     "Average Hourly Earnings YoY": {
         "fred_id": "AHETPI",
+        "fred_release_id": 50,
         "companion_key":  "CPI (CPIAUCSL)",
         "companion_fred": "CPIAUCSL",
         "threshold_bull": 0,
@@ -93,6 +102,7 @@ INDICATOR_CONFIG = {
     },
     "Michigan Consumer Sentiment": {
         "fred_id": "UMCSENT",
+        "fred_release_id": 152,
         "companion_key":  "Michigan 1Y Inflation Exp",
         "companion_fred": "MICH",
         "threshold_bull": 80.0,
@@ -102,8 +112,228 @@ INDICATOR_CONFIG = {
 }
 
 # ─────────────────────────────────────────────────────────────────
-#  スケジュール CSV
+#  米国祝日計算
 # ─────────────────────────────────────────────────────────────────
+
+def us_holidays(year: int) -> set:
+    """
+    米国の主要連邦祝日を返す（ISM 発表日計算に使用）。
+    対象: 元日・MLK Day・大統領の日・メモリアルデー・独立記念日・
+          レイバーデー・コロンバスデー・退役軍人の日・感謝祭・クリスマス
+    """
+    from datetime import date as d
+
+    def nth_weekday(year, month, weekday, n):
+        """第n weekday（0=月曜）を返す"""
+        first = d(year, month, 1)
+        delta = (weekday - first.weekday()) % 7
+        return first + timedelta(days=delta + (n - 1) * 7)
+
+    def last_weekday(year, month, weekday):
+        """最終 weekday を返す"""
+        import calendar
+        last_day = calendar.monthrange(year, month)[1]
+        last = d(year, month, last_day)
+        delta = (last.weekday() - weekday) % 7
+        return last - timedelta(days=delta)
+
+    holidays = set()
+
+    # 元日 (1/1、土なら前金、日なら翌月)
+    ny = d(year, 1, 1)
+    if ny.weekday() == 5:   ny = d(year, 12, 31)   # 前年土曜→前金
+    elif ny.weekday() == 6: ny = d(year, 1, 2)
+    holidays.add(ny)
+
+    holidays.add(nth_weekday(year, 1, 0, 3))   # MLK Day (1月第3月曜)
+    holidays.add(nth_weekday(year, 2, 0, 3))   # Presidents Day (2月第3月曜)
+    holidays.add(last_weekday(year, 5, 0))     # Memorial Day (5月最終月曜)
+
+    # 独立記念日 (7/4)
+    jul4 = d(year, 7, 4)
+    if jul4.weekday() == 5:   jul4 = d(year, 7, 3)
+    elif jul4.weekday() == 6: jul4 = d(year, 7, 5)
+    holidays.add(jul4)
+
+    holidays.add(nth_weekday(year, 9, 0, 1))   # Labor Day (9月第1月曜)
+    holidays.add(nth_weekday(year, 10, 0, 2))  # Columbus Day (10月第2月曜)
+
+    # 退役軍人の日 (11/11)
+    nov11 = d(year, 11, 11)
+    if nov11.weekday() == 5:   nov11 = d(year, 11, 10)
+    elif nov11.weekday() == 6: nov11 = d(year, 11, 12)
+    holidays.add(nov11)
+
+    holidays.add(nth_weekday(year, 11, 3, 4))  # Thanksgiving (11月第4木曜)
+
+    # クリスマス (12/25)
+    xmas = d(year, 12, 25)
+    if xmas.weekday() == 5:   xmas = d(year, 12, 24)
+    elif xmas.weekday() == 6: xmas = d(year, 12, 26)
+    holidays.add(xmas)
+
+    return holidays
+
+
+def nth_us_business_day(year: int, month: int, n: int) -> date:
+    """
+    指定年月の第n米国営業日（月〜金かつ祝日除く）を返す。
+    n=1 → 第1営業日、n=3 → 第3営業日
+    """
+    holidays = us_holidays(year) | us_holidays(year - 1) | us_holidays(year + 1)
+    count = 0
+    d = date(year, month, 1)
+    import calendar
+    last_day = calendar.monthrange(year, month)[1]
+    while d <= date(year, month, last_day):
+        if d.weekday() < 5 and d not in holidays:  # 月〜金 かつ 祝日でない
+            count += 1
+            if count == n:
+                return d
+        d += timedelta(days=1)
+    raise ValueError(f"{year}-{month:02d} の第{n}営業日が見つかりません")
+
+
+# ─────────────────────────────────────────────────────────────────
+#  ISM 発表予定日の内部算出
+# ─────────────────────────────────────────────────────────────────
+
+def ism_release_dates(months_ahead: int = 3) -> list[tuple[str, date]]:
+    """
+    ISM 製造業（第1営業日）の今後 months_ahead ヶ月分の発表予定日リストを返す。
+    非製造業（サービス業）は監視対象外。
+
+    Returns: [(指標名, release_date), ...]
+    """
+    today = date.today()
+    results = []
+    for offset in range(months_ahead + 1):
+        year  = today.year + (today.month - 1 + offset) // 12
+        month = (today.month - 1 + offset) % 12 + 1
+        try:
+            mfg_date = nth_us_business_day(year, month, 1)  # 製造業: 第1営業日
+            if mfg_date >= today:
+                results.append(("ISM Manufacturing PMI", mfg_date))
+        except ValueError as e:
+            logger.warning(f"ISM date calc error: {e}")
+    return results
+
+
+# ─────────────────────────────────────────────────────────────────
+#  FRED Release Calendar
+# ─────────────────────────────────────────────────────────────────
+
+def fred_release_dates(fred_api_key: str, days_ahead: int = 60) -> dict[str, list[date]]:
+    """
+    FRED Release Calendar API で今後 days_ahead 日分の発表予定日を取得。
+    Returns: {指標名: [date, ...]}
+    """
+    today     = date.today()
+    end_date  = today + timedelta(days=days_ahead)
+    results   = {}
+
+    for ind_name, cfg in INDICATOR_CONFIG.items():
+        release_id = cfg.get("fred_release_id")
+        if not release_id:
+            continue  # ISM 系はスキップ（別途算出）
+
+        url = (
+            f"https://api.stlouisfed.org/fred/release/dates"
+            f"?release_id={release_id}"
+            f"&realtime_start={today.strftime('%Y-%m-%d')}"
+            f"&realtime_end={end_date.strftime('%Y-%m-%d')}"
+            f"&include_release_dates_with_no_data=true"
+            f"&api_key={fred_api_key}"
+            f"&file_type=json"
+        )
+        try:
+            r = requests.get(url, timeout=15)
+            r.raise_for_status()
+            data  = r.json()
+            dates = [
+                datetime.strptime(d["date"], "%Y-%m-%d").date()
+                for d in data.get("release_dates", [])
+                if datetime.strptime(d["date"], "%Y-%m-%d").date() >= today
+            ]
+            results[ind_name] = dates
+            logger.info(f"[FRED Release] {ind_name}: {[str(d) for d in dates]}")
+            time.sleep(0.3)  # API レート制限対策
+        except Exception as e:
+            logger.warning(f"[FRED Release] {ind_name} (id={release_id}): {e}")
+
+    return results
+
+
+# ─────────────────────────────────────────────────────────────────
+#  スケジュール CSV 自動更新
+# ─────────────────────────────────────────────────────────────────
+
+def update_schedule(fred_api_key: str, days_ahead: int = 60):
+    """
+    毎週日曜に実行。
+    1. FRED Release Calendar で FRED 収録指標の発表予定日を取得
+    2. ISM 製造業・非製造業は営業日計算で算出
+    3. 未登録の行のみ schedule.csv に追記（既存行は一切変更しない）
+    """
+    ensure_schedule_csv()
+    df = load_schedule()
+
+    # 既登録済みのキー集合: (指標名, 発表予定日)
+    registered = set(zip(df["指標名"], df["発表予定日"]))
+
+    new_rows = []
+
+    # ── FRED Release Calendar ──────────────────────────────────
+    fred_dates = fred_release_dates(fred_api_key, days_ahead)
+    for ind_name, dates in fred_dates.items():
+        cfg = INDICATOR_CONFIG.get(ind_name, {})
+        for release_date in dates:
+            date_str = release_date.strftime("%Y-%m-%d")
+            if (ind_name, date_str) in registered:
+                continue  # 既登録済みはスキップ
+            new_rows.append({
+                "指標名":    ind_name,
+                "発表予定日": date_str,
+                "fred_id":  cfg.get("fred_id", ""),
+                "閾値_強気": cfg.get("threshold_bull", ""),
+                "閾値_弱気": cfg.get("threshold_bear", ""),
+                "単位":      cfg.get("unit", ""),
+                "actual":   "",
+                "備考":      "FRED Release Calendar 自動取得",
+            })
+            logger.info(f"[Schedule+] {ind_name}: {date_str} (FRED)")
+
+    # ── ISM 製造業・非製造業（営業日計算） ──────────────────────
+    for ind_name, release_date in ism_release_dates(months_ahead=3):
+        cfg      = INDICATOR_CONFIG.get(ind_name, {})
+        date_str = release_date.strftime("%Y-%m-%d")
+        rule     = cfg.get("ism_rule", "")
+        note     = "製造業: 米国第1営業日 自動算出"
+        if (ind_name, date_str) in registered:
+            continue
+        new_rows.append({
+            "指標名":    ind_name,
+            "発表予定日": date_str,
+            "fred_id":  "",
+            "閾値_強気": cfg.get("threshold_bull", ""),
+            "閾値_弱気": cfg.get("threshold_bear", ""),
+            "単位":      cfg.get("unit", ""),
+            "actual":   "",
+            "備考":      note,
+        })
+        logger.info(f"[Schedule+] {ind_name}: {date_str} ({note})")
+
+    if not new_rows:
+        logger.info("Schedule up to date. No new rows added.")
+        return
+
+    # 追記して保存（既存行 + 新規行、日付順にソート）
+    new_df   = pd.DataFrame(new_rows, columns=SCHEDULE_COLUMNS)
+    combined = pd.concat([df, new_df], ignore_index=True)
+    combined = combined.sort_values(["発表予定日", "指標名"]).reset_index(drop=True)
+    combined.to_csv(SCHEDULE_PATH, index=False, encoding="utf-8")
+    logger.info(f"Schedule updated: {len(new_rows)} rows added → {SCHEDULE_PATH}")
+
 
 def ensure_schedule_csv():
     """schedule.csv が存在しなければテンプレートを生成する。"""
@@ -114,12 +344,12 @@ def ensure_schedule_csv():
     for name, cfg in INDICATOR_CONFIG.items():
         rows.append({
             "指標名":    name,
-            "発表予定日": "",          # ユーザーが YYYY-MM-DD で記入
+            "発表予定日": "",
             "fred_id":  cfg.get("fred_id", ""),
             "閾値_強気": cfg.get("threshold_bull", ""),
             "閾値_弱気": cfg.get("threshold_bear", ""),
             "単位":      cfg.get("unit", ""),
-            "actual":   "",            # ISM 等 FRED 未収録の手入力実績値
+            "actual":   "",
             "備考":      "",
         })
     pd.DataFrame(rows, columns=SCHEDULE_COLUMNS).to_csv(
@@ -508,13 +738,25 @@ def recalc(df: pd.DataFrame) -> pd.DataFrame:
 #  メインオーケストレーター
 # ─────────────────────────────────────────────────────────────────
 
-def run(target_date: date, test_mode: bool = False, do_recalc: bool = False):
-    logger.info(f"=== MACRO PULSE v4 | {target_date} | test={test_mode} | recalc={do_recalc} ===")
+def run(target_date: date, test_mode: bool = False, do_recalc: bool = False,
+        do_update_schedule: bool = False):
+    logger.info(f"=== MACRO PULSE v4.1 | {target_date} | test={test_mode} | recalc={do_recalc} | update_schedule={do_update_schedule} ===")
 
     ensure_schedule_csv()
     fred     = get_fred()
     schedule = load_schedule()
     existing = load_csv()
+
+    # ── スケジュール自動更新モード ──────────────────────────────
+    if do_update_schedule:
+        logger.info("=== UPDATE SCHEDULE MODE ===")
+        fred_api_key = os.environ.get("FRED_API_KEY", "")
+        if not fred_api_key:
+            logger.error("FRED_API_KEY not set. Cannot update schedule.")
+            sys.exit(1)
+        update_schedule(fred_api_key)
+        logger.info("=== Schedule update complete ===")
+        return
 
     # ── 再計算モード ────────────────────────────────────────────
     if do_recalc:
@@ -602,16 +844,19 @@ def run(target_date: date, test_mode: bool = False, do_recalc: bool = False):
 # ─────────────────────────────────────────────────────────────────
 
 def main():
-    p = argparse.ArgumentParser(description="MACRO PULSE Economic Indicators v4")
-    p.add_argument("--test",   action="store_true", help="Test mode")
-    p.add_argument("--recalc", action="store_true",
+    p = argparse.ArgumentParser(description="MACRO PULSE Economic Indicators v4.1")
+    p.add_argument("--test",            action="store_true", help="Test mode")
+    p.add_argument("--recalc",          action="store_true",
                    help="Recalculate Surprise for all rows where forecast was updated")
+    p.add_argument("--update-schedule", action="store_true",
+                   help="Auto-update indicator_schedule.csv via FRED Release Calendar + ISM rule")
     p.add_argument("--date", type=str, default=None,
                    help="Target date YYYY-MM-DD (default: yesterday)")
     args = p.parse_args()
     target = (datetime.strptime(args.date, "%Y-%m-%d").date()
               if args.date else (datetime.now() - timedelta(days=1)).date())
-    run(target, test_mode=args.test, do_recalc=args.recalc)
+    run(target, test_mode=args.test, do_recalc=args.recalc,
+        do_update_schedule=args.update_schedule)
 
 
 if __name__ == "__main__":
