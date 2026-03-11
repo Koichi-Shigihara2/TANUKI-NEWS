@@ -1,14 +1,13 @@
-// 経済指標ダッシュボード用JavaScript
+// 経済指標ダッシュボード用JavaScript (GitHub Pages / CSV読み込み最適化版)
 
 let economicData = [];
 let surpriseChart = null;
 let correlationChart = null;
 
-// データフォーマット変換関数
+// --- ユーティリティ関数 ---
+
 function parseJapaneseNumber(str) {
-    if (!str || str === 'NaN' || str === '-') return null;
-    
-    // 日本語の数値を数値に変換
+    if (!str || str === 'NaN' || str === '-' || str === '') return null;
     const cleaned = str.toString().replace(/,/g, '');
     const num = parseFloat(cleaned);
     return isNaN(num) ? null : num;
@@ -16,22 +15,13 @@ function parseJapaneseNumber(str) {
 
 function formatNumber(num, decimals = 2) {
     if (num === null || num === undefined || isNaN(num)) return '-';
-    return num.toFixed(decimals);
-}
-
-function formatCurrency(num) {
-    if (num === null || num === undefined || isNaN(num)) return '-';
-    return new Intl.NumberFormat('ja-JP', {
-        style: 'currency',
-        currency: 'JPY',
-        minimumFractionDigits: 0
-    }).format(num);
+    return num.toLocaleString('ja-JP', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
 function getSurpriseClass(surprise) {
     const num = parseFloat(surprise);
     if (isNaN(num)) return 'neutral';
-    return num > 0 ? 'positive' : num < 0 ? 'negative' : 'neutral';
+    return num > 0 ? 'text-green-600 font-bold' : num < 0 ? 'text-red-600 font-bold' : 'neutral';
 }
 
 function getSurpriseIcon(surprise) {
@@ -40,59 +30,47 @@ function getSurpriseIcon(surprise) {
     return num > 0 ? '↑' : num < 0 ? '↓' : '→';
 }
 
-// データ読み込み関数
+// --- データ読み込み ---
+
 async function loadEconomicData() {
     try {
-        // テーブルAPIからデータを取得
-        const response = await fetch('tables/economic_indicators?page=1&limit=100&sort=リリース日');
-        if (!response.ok) throw new Error('データ取得失敗');
+        console.log('Fetching CSV data...');
+        // GitHub Actionsで更新されているCSVを直接取得
+        const response = await fetch('data/economic_history.csv?t=' + new Date().getTime()); // キャッシュ対策
+        if (!response.ok) throw new Error('CSVファイルの取得に失敗しました');
         
-        const result = await response.json();
-        economicData = result.data || [];
+        const csvText = await response.text();
+        economicData = parseCSVData(csvText);
         
-        // CSVファイルからのフォールバック
-        if (economicData.length === 0) {
-            const csvResponse = await fetch('data/economic_history.csv');
-            if (csvResponse.ok) {
-                const csvText = await csvResponse.text();
-                economicData = parseCSVData(csvText);
-            }
-        }
-        
+        console.log('Data loaded:', economicData.length, 'records');
         updateDashboard();
     } catch (error) {
         console.error('データ読み込みエラー:', error);
-        showError('データの読み込みに失敗しました');
+        showError('データの読み込みに失敗しました。CSVファイルが存在するか確認してください。');
     }
 }
 
 function parseCSVData(csvText) {
-    const lines = csvText.split('\n');
-    const headers = lines[0].split(',');
-    const data = [];
+    const lines = csvText.trim().split('\n');
+    if (lines.length < 2) return [];
+
+    // ヘッダーの取得
+    const headers = lines[0].split(',').map(h => h.trim());
     
-    for (let i = 1; i < lines.length; i++) {
-        if (!lines[i].trim()) continue;
-        
-        const values = lines[i].split(',');
+    return lines.slice(1).map((line, index) => {
+        // カンマ区切りのパース（簡易版）
+        const values = line.split(',');
         const row = {};
-        
-        headers.forEach((header, index) => {
-            row[header.trim()] = values[index]?.trim() || '';
+        headers.forEach((header, i) => {
+            row[header] = values[i] ? values[i].trim() : '';
         });
-        
-        // IDを生成
-        row.id = `row_${i}`;
-        row.created_at = new Date().getTime();
-        row.updated_at = new Date().getTime();
-        
-        data.push(row);
-    }
-    
-    return data;
+        row.id = `row_${index}`;
+        return row;
+    });
 }
 
-// ダッシュボード更新関数
+// --- 画面更新ロジック ---
+
 function updateDashboard() {
     updateSummaryCards();
     updateCharts();
@@ -103,34 +81,30 @@ function updateDashboard() {
 
 function updateSummaryCards() {
     const totalIndicators = economicData.length;
-    
     let positiveSurprises = 0;
     let negativeSurprises = 0;
-    let sp500Change = null;
     
+    // 最新の有効な株価データを取得
+    const validPrices = economicData.filter(d => parseJapaneseNumber(d['S&P500']) !== null);
+    const latestPriceRow = validPrices.length > 0 ? validPrices[validPrices.length - 1] : null;
+    const sp500Val = latestPriceRow ? parseJapaneseNumber(latestPriceRow['S&P500']) : null;
+
     economicData.forEach(row => {
         const surprise = parseFloat(row['Surprise(実際-期待)']);
         if (!isNaN(surprise)) {
             if (surprise > 0) positiveSurprises++;
             else if (surprise < 0) negativeSurprises++;
         }
-        
-        if (row['S&P500'] && sp500Change === null) {
-            sp500Change = parseJapaneseNumber(row['S&P500']);
-        }
     });
-    
+
     document.getElementById('totalIndicators').textContent = totalIndicators;
     document.getElementById('positiveSurprises').textContent = positiveSurprises;
     document.getElementById('negativeSurprises').textContent = negativeSurprises;
     
     const sp500Element = document.getElementById('sp500Change');
-    if (sp500Change !== null) {
-        sp500Element.textContent = formatNumber(sp500Change);
-        sp500Element.className = `text-2xl font-bold ${sp500Change >= 0 ? 'positive' : 'negative'}`;
-    } else {
-        sp500Element.textContent = '--';
-        sp500Element.className = 'text-2xl font-bold neutral';
+    if (sp500Val) {
+        sp500Element.textContent = formatNumber(sp500Val);
+        sp500Element.className = `text-2xl font-bold ${sp500Val >= 5000 ? 'text-green-600' : 'text-red-600'}`;
     }
 }
 
@@ -140,268 +114,124 @@ function updateCharts() {
 }
 
 function updateSurpriseChart() {
-    const ctx = document.getElementById('surpriseChart').getContext('2d');
+    const canvas = document.getElementById('surpriseChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
     
-    // サプライズデータを日付順にソート
     const sortedData = [...economicData]
-        .filter(row => row['リリース日'] && row['Surprise(実際-期待)'])
+        .filter(row => row['リリース日'] && !isNaN(parseFloat(row['Surprise(実際-期待)'])))
         .sort((a, b) => new Date(a['リリース日']) - new Date(b['リリース日']));
-    
+
     const labels = sortedData.map(row => row['リリース日']);
-    const surprises = sortedData.map(row => parseFloat(row['Surprise(実際-期待)']) || 0);
-    
-    if (surpriseChart) {
-        surpriseChart.destroy();
-    }
-    
+    const surprises = sortedData.map(row => parseFloat(row['Surprise(実際-期待)']));
+
+    if (surpriseChart) surpriseChart.destroy();
+
     surpriseChart = new Chart(ctx, {
-        type: 'line',
+        type: 'bar',
         data: {
             labels: labels,
             datasets: [{
-                label: 'サプライズ',
+                label: 'サプライズ (実際-期待)',
                 data: surprises,
-                borderColor: '#3b82f6',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                fill: true,
-                tension: 0.4
+                backgroundColor: surprises.map(v => v >= 0 ? 'rgba(59, 130, 246, 0.6)' : 'rgba(239, 68, 68, 0.6)'),
+                borderColor: surprises.map(v => v >= 0 ? '#3b82f6' : '#ef4444'),
+                borderWidth: 1
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.1)'
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    }
-                }
-            }
+            scales: { y: { beginAtZero: true } }
         }
     });
 }
 
 function updateCorrelationChart() {
     const chartDom = document.getElementById('correlationChart');
+    if (!chartDom) return;
     const myChart = echarts.init(chartDom);
     
-    // S&P500とNasdaqの相関データ
-    const sp500Data = economicData.map(row => parseJapaneseNumber(row['S&P500'])).filter(val => val !== null);
-    const nasdaqData = economicData.map(row => parseJapaneseNumber(row['Nasdaq'])).filter(val => val !== null);
-    const dates = economicData.map(row => row['リリース日']).filter((_, index) => sp500Data[index] !== undefined);
-    
+    const plotData = economicData
+        .filter(row => row['S&P500'] && row['Nasdaq'])
+        .sort((a, b) => new Date(a['リリース日']) - new Date(b['リリース日']));
+
+    const dates = plotData.map(row => row['リリース日']);
+    const sp500Data = plotData.map(row => parseJapaneseNumber(row['S&P500']));
+    const nasdaqData = plotData.map(row => parseJapaneseNumber(row['Nasdaq']));
+
     const option = {
-        tooltip: {
-            trigger: 'axis',
-            axisPointer: {
-                type: 'cross'
-            }
-        },
-        legend: {
-            data: ['S&P500', 'Nasdaq']
-        },
-        grid: {
-            left: '3%',
-            right: '4%',
-            bottom: '3%',
-            containLabel: true
-        },
-        xAxis: {
-            type: 'category',
-            boundaryGap: false,
-            data: dates
-        },
-        yAxis: {
-            type: 'value',
-            axisLabel: {
-                formatter: '${value}'
-            }
-        },
+        tooltip: { trigger: 'axis' },
+        legend: { data: ['S&P500', 'Nasdaq'] },
+        xAxis: { type: 'category', data: dates },
+        yAxis: { type: 'value', scale: true },
         series: [
-            {
-                name: 'S&P500',
-                type: 'line',
-                stack: 'Total',
-                areaStyle: {},
-                emphasis: {
-                    focus: 'series'
-                },
-                data: sp500Data
-            },
-            {
-                name: 'Nasdaq',
-                type: 'line',
-                stack: 'Total',
-                areaStyle: {},
-                emphasis: {
-                    focus: 'series'
-                },
-                data: nasdaqData
-            }
+            { name: 'S&P500', type: 'line', data: sp500Data, smooth: true },
+            { name: 'Nasdaq', type: 'line', data: nasdaqData, smooth: true }
         ]
     };
-    
     myChart.setOption(option);
-    
-    // レスポンシブ対応
-    window.addEventListener('resize', function() {
-        myChart.resize();
-    });
+    window.addEventListener('resize', () => myChart.resize());
 }
 
 function updateTable() {
     const tbody = document.getElementById('tableBody');
     const indicatorFilter = document.getElementById('indicatorFilter').value;
-    const dateFilter = document.getElementById('dateFilter').value;
     
-    let filteredData = economicData;
-    
+    let filteredData = [...economicData];
     if (indicatorFilter) {
         filteredData = filteredData.filter(row => row['指標名'] === indicatorFilter);
     }
     
-    if (dateFilter) {
-        filteredData = filteredData.filter(row => row['リリース日'] === dateFilter);
-    }
-    
-    // 最新のデータを上に表示
     filteredData.sort((a, b) => new Date(b['リリース日']) - new Date(a['リリース日']));
-    
+
     if (filteredData.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="7" class="px-6 py-4 text-center text-gray-500">
-                    データが見つかりません
-                </td>
-            </tr>
-        `;
+        tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center">データがありません</td></tr>';
         return;
     }
-    
+
     tbody.innerHTML = filteredData.map(row => {
         const surprise = row['Surprise(実際-期待)'];
-        const surpriseClass = getSurpriseClass(surprise);
-        const surpriseIcon = getSurpriseIcon(surprise);
-        
         return `
-            <tr class="hover:bg-gray-50">
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    ${row['指標名'] || '-'}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${row['リリース日'] || '-'}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${row['実際値'] || '-'}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    ${row['期待値(Consensus)'] || '-'}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${surpriseClass}">
-                    ${surpriseIcon} ${row['Surprise(実際-期待)'] || '-'}
-                </td>
-                <td class="px-6 py-4 text-sm text-gray-900">
-                    ${row['市場反応(自動生成)'] || '-'}
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${row['S&P500'] || '-'}
-                </td>
+            <tr class="hover:bg-gray-50 border-b">
+                <td class="px-6 py-4 text-sm font-medium text-gray-900">${row['指標名'] || '-'}</td>
+                <td class="px-6 py-4 text-sm text-gray-500">${row['リリース日'] || '-'}</td>
+                <td class="px-6 py-4 text-sm text-gray-900">${row['実際値'] || '-'}</td>
+                <td class="px-6 py-4 text-sm text-gray-500">${row['期待値(Consensus)'] || '-'}</td>
+                <td class="px-6 py-4 text-sm ${getSurpriseClass(surprise)}">${getSurpriseIcon(surprise)} ${surprise || '-'}</td>
+                <td class="px-6 py-4 text-xs text-gray-600">${row['市場反応(自動生成)'] || '-'}</td>
+                <td class="px-6 py-4 text-sm text-gray-900">${row['S&P500'] || '-'}</td>
             </tr>
         `;
     }).join('');
 }
 
 function updateFilters() {
-    const indicatorFilter = document.getElementById('indicatorFilter');
-    const indicators = [...new Set(economicData.map(row => row['指標名']).filter(Boolean))];
+    const filter = document.getElementById('indicatorFilter');
+    if (!filter || filter.options.length > 1) return;
     
-    indicatorFilter.innerHTML = '<option value="">すべての指標</option>' +
-        indicators.map(indicator => `<option value="${indicator}">${indicator}</option>`).join('');
+    const indicators = [...new Set(economicData.map(row => row['指標名']).filter(Boolean))];
+    indicators.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        filter.appendChild(opt);
+    });
 }
 
 function updateLastUpdate() {
-    const now = new Date();
-    document.getElementById('lastUpdate').textContent = now.toLocaleString('ja-JP');
+    const el = document.getElementById('lastUpdate');
+    if (el) el.textContent = new Date().toLocaleString('ja-JP');
 }
 
-function filterTable() {
-    updateTable();
-}
-
-function refreshData() {
-    const loadingElement = document.querySelector('#tableBody tr:first-child td');
-    const originalContent = loadingElement.innerHTML;
-    
-    loadingElement.innerHTML = '<div class="loading"></div> 更新中...';
-    
-    setTimeout(() => {
-        loadEconomicData();
-    }, 1000);
-}
-
-function showError(message) {
+function showError(msg) {
     const tbody = document.getElementById('tableBody');
-    tbody.innerHTML = `
-        <tr>
-            <td colspan="7" class="px-6 py-4 text-center text-red-600">
-                <i class="fas fa-exclamation-triangle mr-2"></i>
-                ${message}
-            </td>
-        </tr>
-    `;
+    if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="px-6 py-4 text-center text-red-500">${msg}</td></tr>`;
 }
 
-// データベーススキーマの初期化
-async function initializeDatabase() {
-    try {
-        // 経済指標テーブルのスキーマ定義
-        await fetch('tables/economic_indicators', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                name: 'economic_indicators',
-                fields: [
-                    { name: 'id', type: 'text', description: 'ユニークID' },
-                    { name: '指標名', type: 'text', description: '経済指標名' },
-                    { name: 'リリース日', type: 'datetime', description: '発表日' },
-                    { name: '実際値', type: 'text', description: '実際の数値' },
-                    { name: '期待値(Consensus)', type: 'text', description: '市場期待値' },
-                    { name: '前回値', type: 'text', description: '前回の数値' },
-                    { name: 'Surprise(実際-期待)', type: 'text', description: 'サプライズ' },
-                    { name: 'YoY変化(%)', type: 'text', description: '前年比変化率' },
-                    { name: 'S&P500', type: 'text', description: 'S&P500終値' },
-                    { name: 'Nasdaq', type: 'text', description: 'Nasdaq終値' },
-                    { name: '10Y-2Y(YieldCurve)', type: 'text', description: 'イールドカーブ' },
-                    { name: '付随データ', type: 'rich_text', description: '追加データ' },
-                    { name: '市場反応(自動生成)', type: 'text', description: '市場反応' },
-                    { name: 'データソース', type: 'text', description: 'データ取得元' },
-                    { name: '更新日時', type: 'datetime', description: '最終更新日時' }
-                ]
-            })
-        });
-    } catch (error) {
-        console.log('データベース初期化スキップ:', error.message);
-    }
-}
-
-// ページ読み込み時の処理
-document.addEventListener('DOMContentLoaded', function() {
-    initializeDatabase();
+// 起動
+document.addEventListener('DOMContentLoaded', () => {
     loadEconomicData();
-    
-    // 定期更新（5分ごと）
-    setInterval(loadEconomicData, 5 * 60 * 1000);
+    // 1時間おきに自動更新
+    setInterval(loadEconomicData, 60 * 60 * 1000);
 });
