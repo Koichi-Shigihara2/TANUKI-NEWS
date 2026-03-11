@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📧 週次経済レポート設定</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-2xl mx-auto">
+            <!-- ヘッダー -->
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+                <h1 class="text-2xl font-bold text-gray-800 mb-2">
+                    <i class="fas fa-envelope mr-3 text-blue-600"></i>
+                    週次経済レポート設定
+                </h1>
+                <p class="text-gray-600">毎週経済指標のサマリーをメールでお届けします</p>
+            </div>
+
+            <!-- 設定フォーム -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <form id="emailSettingsForm" class="space-y-6">
+                    <!-- メールアドレス -->
+                    <div>
+                        <label for="emailAddress" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-at mr-1"></i>メールアドレス
+                        </label>
+                        <input type="email" id="emailAddress" name="emailAddress" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                               placeholder="your@email.com">
+                        <p class="text-sm text-gray-500 mt-1">週次レポートをお届けするメールアドレスを入力してください</p>
+                    </div>
+
+                    <!-- 配信曜日 -->
+                    <div>
+                        <label for="deliveryDay" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-calendar-day mr-1"></i>配信曜日
+                        </label>
+                        <select id="deliveryDay" name="deliveryDay" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="monday">月曜日</option>
+                            <option value="tuesday">火曜日</option>
+                            <option value="wednesday">水曜日</option>
+                            <option value="thursday">木曜日</option>
+                            <option value="friday" selected>金曜日</option>
+                        </select>
+                        <p class="text-sm text-gray-500 mt-1">週次レポートを配信する曜日を選択してください</p>
+                    </div>
+
+                    <!-- 配信時刻 -->
+                    <div>
+                        <label for="deliveryTime" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-clock mr-1"></i>配信時刻
+                        </label>
+                        <select id="deliveryTime" name="deliveryTime"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="06:00">06:00</option>
+                            <option value="07:00" selected>07:00</option>
+                            <option value="08:00">08:00</option>
+                            <option value="09:00">09:00</option>
+                            <option value="18:00">18:00</option>
+                            <option value="19:00">19:00</option>
+                        </select>
+                        <p class="text-sm text-gray-500 mt-1">日本時間で配信時刻を選択してください</p>
+                    </div>
+
+                    <!-- レポート形式 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-file-alt mr-1"></i>レポート形式
+                        </label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" name="reportFormat" value="summary" checked 
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">サマリー（主要指標のハイライト）</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="reportFormat" value="details" checked
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">詳細データ（全指標の数値）</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="reportFormat" value="charts" checked
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">チャート（グラフ付き分析）</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="reportFormat" value="alerts" checked
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">アラート（重要なサプライズのみ）</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 重要指標フィルター -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-filter mr-1"></i>重要指標フィルター
+                        </label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" name="indicators" value="ISM Manufacturing PMI" checked
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">ISM製造業PMI</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="indicators" value="New Residential Starts" checked
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">新築住宅着工件数</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="indicators" value="Durable Goods Orders" checked
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">耐久財受注</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="indicators" value="Initial Jobless Claims" checked
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">新規失業保険申請件数</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="indicators" value="Average Hourly Earnings (YoY)" checked
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">平均時給（前年比）</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="indicators" value="Michigan Consumer Sentiment" checked
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">ミシガン大学消費者信頼感指数</span>
+                            </label>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-1">レポートに含める指標を選択してください</p>
+                    </div>
+
+                    <!-- サプライズ感度 -->
+                    <div>
+                        <label for="surpriseThreshold" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-exclamation-triangle mr-1"></i>サプライズ感度
+                        </label>
+                        <select id="surpriseThreshold" name="surpriseThreshold"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="0.1">軽微（±0.1以上）</option>
+                            <option value="0.5" selected>通常（±0.5以上）</option>
+                            <option value="1.0">重要（±1.0以上）</option>
+                            <option value="2.0">重大（±2.0以上）</option>
+                        </select>
+                        <p class="text-sm text-gray-500 mt-1">どの程度のサプライズを重要として扱うか設定します</p>
+                    </div>
+
+                    <!-- 通知設定 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-bell mr-1"></i>通知設定
+                        </label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" name="notifications" value="email" checked
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">メール通知</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="notifications" value="emergency" checked
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 text-sm text-gray-700">緊急時のみ通知（重大なサプライズ）</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 送信ボタン -->
+                    <div class="flex items-center justify-end space-x-4 pt-6">
+                        <button type="button" onclick="testEmail()" 
+                                class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors">
+                            <i class="fas fa-paper-plane mr-2"></i>テスト送信
+                        </button>
+                        <button type="submit" 
+                                class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-save mr-2"></i>設定保存
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 現在の設定状況 -->
+            <div class="bg-white rounded-lg shadow-lg p-6 mt-8">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">
+                    <i class="fas fa-info-circle mr-2 text-blue-600"></i>
+                    現在の設定状況
+                </h3>
+                <div id="currentSettings" class="text-sm text-gray-600">
+                    <p><strong>メールアドレス:</strong> <span id="currentEmail">未設定</span></p>
+                    <p><strong>配信曜日:</strong> <span id="currentDay">金曜日</span></p>
+                    <p><strong>配信時刻:</strong> <span id="currentTime">07:00</span></p>
+                    <p><strong>次回配信予定:</strong> <span id="nextDelivery">--</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // メール設定フォームの処理
+        document.getElementById('emailSettingsForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const settings = {
+                emailAddress: formData.get('emailAddress'),
+                deliveryDay: formData.get('deliveryDay'),
+                deliveryTime: formData.get('deliveryTime'),
+                reportFormat: formData.getAll('reportFormat'),
+                indicators: formData.getAll('indicators'),
+                surpriseThreshold: formData.get('surpriseThreshold'),
+                notifications: formData.getAll('notifications')
+            };
+            
+            try {
+                // 設定を保存
+                const response = await fetch('/api/email-settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(settings)
+                });
+                
+                if (response.ok) {
+                    alert('設定が正常に保存されました');
+                    updateCurrentSettings(settings);
+                } else {
+                    alert('設定の保存に失敗しました');
+                }
+            } catch (error) {
+                console.error('エラー:', error);
+                alert('通信エラーが発生しました');
+            }
+        });
+        
+        // テストメール送信
+        async function testEmail() {
+            const emailAddress = document.getElementById('emailAddress').value;
+            if (!emailAddress) {
+                alert('メールアドレスを入力してください');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/test-email', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ emailAddress })
+                });
+                
+                if (response.ok) {
+                    alert('テストメールを送信しました');
+                } else {
+                    alert('テストメールの送信に失敗しました');
+                }
+            } catch (error) {
+                console.error('エラー:', error);
+                alert('通信エラーが発生しました');
+            }
+        }
+        
+        // 現在の設定を更新
+        function updateCurrentSettings(settings) {
+            document.getElementById('currentEmail').textContent = settings.emailAddress;
+            document.getElementById('currentDay').textContent = getDayName(settings.deliveryDay);
+            document.getElementById('currentTime').textContent = settings.deliveryTime;
+            
+            // 次回配信日を計算
+            const nextDelivery = calculateNextDelivery(settings.deliveryDay, settings.deliveryTime);
+            document.getElementById('nextDelivery').textContent = nextDelivery;
+        }
+        
+        // 曜日名を取得
+        function getDayName(day) {
+            const dayNames = {
+                'monday': '月曜日',
+                'tuesday': '火曜日',
+                'wednesday': '水曜日',
+                'thursday': '木曜日',
+                'friday': '金曜日'
+            };
+            return dayNames[day] || '金曜日';
+        }
+        
+        // 次回配信日を計算
+        function calculateNextDelivery(deliveryDay, deliveryTime) {
+            const now = new Date();
+            const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+            const targetDayIndex = days.indexOf(deliveryDay);
+            const currentDayIndex = now.getDay();
+            
+            let daysUntilDelivery = targetDayIndex - currentDayIndex;
+            if (daysUntilDelivery <= 0) {
+                daysUntilDelivery += 7;
+            }
+            
+            const nextDeliveryDate = new Date(now);
+            nextDeliveryDate.setDate(now.getDate() + daysUntilDelivery);
+            
+            return nextDeliveryDate.toLocaleDateString('ja-JP', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                weekday: 'long'
+            }) + ' ' + deliveryTime;
+        }
+        
+        // ページ読み込み時の処理
+        document.addEventListener('DOMContentLoaded', function() {
+            // 現在の設定を読み込む
+            loadCurrentSettings();
+        });
+        
+        // 現在の設定を読み込む
+        async function loadCurrentSettings() {
+            try {
+                const response = await fetch('/api/email-settings');
+                if (response.ok) {
+                    const settings = await response.json();
+                    if (settings) {
+                        document.getElementById('emailAddress').value = settings.emailAddress || '';
+                        document.getElementById('deliveryDay').value = settings.deliveryDay || 'friday';
+                        document.getElementById('deliveryTime').value = settings.deliveryTime || '07:00';
+                        document.getElementById('surpriseThreshold').value = settings.surpriseThreshold || '0.5';
+                        
+                        updateCurrentSettings(settings);
+                    }
+                }
+            } catch (error) {
+                console.error('設定読み込みエラー:', error);
+            }
+        }
+    </script>
+</body>
+</html>
