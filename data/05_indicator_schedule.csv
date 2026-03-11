@@ -12,4 +12,6 @@ Durable Goods Orders,2026-04-09,DGORDER,0.0,0.0,%MoM,,FRED Release Calendar 自�
 Initial Jobless Claims,2026-04-15,ICSA,250000.0,300000.0,件,,FRED Release Calendar 自動取得
 ISM Manufacturing PMI,2026-05-01,,50.0,50.0,index,,製造業: 米国第1営業日 自動算出
 Average Hourly Earnings YoY,2026-05-08,AHETPI,0.0,0.0,%YoY,,FRED Release Calendar 自動取得
+Initial Jobless Claims,2026-05-15,ICSA,250000,300000,件,,FRED Release Calendar 自動取得
 ISM Manufacturing PMI,2026-06-01,,50.0,50.0,index,,製造業: 米国第1営業日 自動算出
+Average Hourly Earnings YoY,2026-06-05,AHETPI,0,0,%YoY,,FRED Release Calendar 自動取得
