@@ -69,8 +69,8 @@ INDICATOR_CONFIG = {
         "fred_release_id": 235,
         "companion_key":  "Mortgage Rate 30Y",
         "companion_fred": "MORTGAGE30US",
-        "threshold_bull": 1400,
-        "threshold_bear": 1200,
+        "threshold_bull": 1400.0,
+        "threshold_bear": 1200.0,
         "unit": "千件",
     },
     "Durable Goods Orders": {
@@ -78,8 +78,8 @@ INDICATOR_CONFIG = {
         "fred_release_id": 110,
         "companion_key":  "Durable Ex-Transport",
         "companion_fred": "ADXTNO",
-        "threshold_bull": 0,
-        "threshold_bear": 0,
+        "threshold_bull": 0.0,
+        "threshold_bear": 0.0,
         "unit": "%MoM",
     },
     "Initial Jobless Claims": {
@@ -87,8 +87,8 @@ INDICATOR_CONFIG = {
         "fred_release_id": 321,
         "companion_key":  "4W Moving Avg",
         "companion_fred": "IC4WSA",
-        "threshold_bull": 250000,
-        "threshold_bear": 300000,
+        "threshold_bull": 250000.0,
+        "threshold_bear": 300000.0,
         "unit": "件",
     },
     "Average Hourly Earnings YoY": {
@@ -96,8 +96,8 @@ INDICATOR_CONFIG = {
         "fred_release_id": 50,
         "companion_key":  "CPI (CPIAUCSL)",
         "companion_fred": "CPIAUCSL",
-        "threshold_bull": 0,
-        "threshold_bear": 0,
+        "threshold_bull": 0.0,
+        "threshold_bear": 0.0,
         "unit": "%YoY",
     },
     "Michigan Consumer Sentiment": {
