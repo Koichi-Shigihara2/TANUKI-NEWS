@@ -497,52 +497,101 @@ def _stooq(symbol: str, target_date: date):
 ZQ_MONTH_CODE = {1:'F',2:'G',3:'H',4:'J',5:'K',6:'M',
                  7:'N',8:'Q',9:'U',10:'V',11:'X',12:'Z'}
 
-def get_zq_futures(target_date: date):
-    """
-    12ヶ月先のZQ先物価格を取得し (ticker, price, implied_rate) を返す。
-
-    正規フォーマット: ZQH27（大文字・拡張子なし・年2桁）
-    例: 2026年3月時点の12ヶ月先 = 2027年3月限 = ZQH27
-
-    失敗時は (None, None, None)
-    """
-    # 12ヶ月後の月を正確に計算
+def _zq_ticker(target_date: date) -> tuple:
+    """(ticker文字列, future_date) を返すユーティリティ。"""
     y = target_date.year + (target_date.month + 11) // 12
     m = (target_date.month + 11) % 12 + 1
     if m == 0:
         m = 12
         y += 1
     future_date = date(y, m, 1)
+    mc  = ZQ_MONTH_CODE[future_date.month]
+    yr2 = str(future_date.year)[-2:]   # 例: '27'
+    return f"ZQ{mc}{yr2}", future_date   # 例: 'ZQH27'
 
-    mc  = ZQ_MONTH_CODE[future_date.month]   # 例: 'H'
-    yr2 = str(future_date.year)[-2:]          # 例: '27'
-    yr1 = str(future_date.year)[-1]           # 例: '7'
 
-    # 正規フォーマット ZQH27 を最優先。小文字/拡張子付きをフォールバックに
-    candidates = [
-        f"ZQ{mc}{yr2}",        # ZQH27  ← 正規フォーマット（大文字・年2桁）
-        f"ZQ{mc}{yr1}",        # ZQH7   （年1桁）
-        f"zq{mc.lower()}{yr2}",        # zqh27
-        f"zq{mc.lower()}{yr2}.cbt",    # zqh27.cbt
-        f"zq{mc.lower()}{yr1}.cbt",    # zqh7.cbt
-    ]
+def _fmp_futures(ticker: str, target_date: date) -> float | None:
+    """
+    FMP API v3 で先物の終値を取得。
+    エンドポイント: /v3/historical-price-full/{ticker}
+    ティッカー例: ZQH27 → FMPでは 'ZQH27' または '/ZQH27' を試行。
+    """
+    api_key = os.environ.get("FMP_API_KEY", "")
+    if not api_key:
+        logger.warning("FMP_API_KEY not set")
+        return None
 
-    price = None
-    used_ticker = None
-    for t in candidates:
-        logger.info(f"ZQ ticker attempt: {t} ({future_date.strftime('%Y-%m')})")
-        price = _stooq(t, target_date)
-        if price is not None:
-            used_ticker = t
-            break
+    d1 = (target_date - timedelta(days=10)).strftime("%Y-%m-%d")
+    d2 = target_date.strftime("%Y-%m-%d")
+
+    # FMPのCBOT先物はティッカーをそのまま渡す
+    for sym in [ticker, f"/{ticker}"]:
+        url = (f"https://financialmodelingprep.com/api/v3/historical-price-full/{sym}"
+               f"?from={d1}&to={d2}&apikey={api_key}")
+        try:
+            r = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
+            if r.status_code == 200:
+                data = r.json()
+                hist = data.get("historical", [])
+                if hist:
+                    # 日付降順で最新終値を返す
+                    latest = sorted(hist, key=lambda x: x["date"], reverse=True)[0]
+                    price = float(latest["close"])
+                    logger.info(f"FMP ZQ [{sym}]: {price} (date={latest['date']})")
+                    return price
+                else:
+                    logger.info(f"FMP ZQ [{sym}]: no data")
+            else:
+                logger.info(f"FMP ZQ [{sym}]: HTTP {r.status_code}")
+        except Exception as e:
+            logger.warning(f"FMP ZQ [{sym}]: {e}")
+
+    return None
+
+
+def get_zq_futures(target_date: date):
+    """
+    12ヶ月先のZQ先物価格を取得し (ticker, price, implied_rate) を返す。
+
+    取得順:
+      1. FMP API  — ZQH27 / /ZQH27
+      2. stooq    — ZQH27 / ZQH7 / zqh27 / zqh27.cbt (フォールバック)
+
+    失敗時は (None, None, None)
+    """
+    ticker, future_date = _zq_ticker(target_date)
+    mc_l = ticker[2].lower()
+    yr2  = ticker[3:]
+    yr1  = yr2[-1]
+
+    logger.info(f"ZQ target: {ticker} ({future_date.strftime('%Y-%m')})")
+
+    # ── 1st: FMP ────────────────────────────────────────────────
+    price = _fmp_futures(ticker, target_date)
+
+    # ── 2nd: stooq フォールバック ────────────────────────────────
+    if price is None:
+        stooq_candidates = [
+            ticker,                        # ZQH27
+            f"ZQ{ticker[2]}{yr1}",         # ZQH7
+            f"zq{mc_l}{yr2}",              # zqh27
+            f"zq{mc_l}{yr2}.cbt",          # zqh27.cbt
+            f"zq{mc_l}{yr1}.cbt",          # zqh7.cbt
+        ]
+        for t in stooq_candidates:
+            logger.info(f"stooq ZQ attempt: {t}")
+            price = _stooq(t, target_date)
+            if price is not None:
+                ticker = t.upper()
+                break
 
     if price is None:
-        logger.warning("ZQ futures: could not retrieve price for any ticker format")
+        logger.warning("ZQ futures: all sources failed (FMP + stooq)")
         return None, None, None
 
     implied_rate = round(100.0 - price, 4)
-    logger.info(f"ZQ price: {price} → implied FF rate: {implied_rate}% (ticker={used_ticker})")
-    return used_ticker.upper(), price, implied_rate
+    logger.info(f"ZQ price: {price} → implied FF rate: {implied_rate}% (ticker={ticker})")
+    return ticker.upper(), price, implied_rate
 
 
 def get_ff_current(fred):
