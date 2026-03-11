@@ -110,7 +110,8 @@ INDICATOR_CONFIG = {
     },
     "Michigan Consumer Sentiment": {
         "fred_id": "UMCSENT",
-        "fred_release_id": 152,
+        "fred_release_id": 426,      # 426=速報(Preliminary) / 152=確報(Final)
+        "fred_release_id_alt": 152,  # 確報もフォールバックで取得
         "companion_key":  "Michigan 1Y Inflation Exp",
         "companion_fred": "MICH",
         "threshold_bull": 80.0,
@@ -246,45 +247,54 @@ def fred_release_dates(fred_api_key: str, days_ahead: int = 90) -> dict[str, lis
         if not release_id:
             continue  # ISM 系はスキップ（別途算出）
 
-        url = (
-            f"https://api.stlouisfed.org/fred/release/dates"
-            f"?release_id={release_id}"
-            f"&realtime_start={today.strftime('%Y-%m-%d')}"
-            f"&realtime_end={end_date.strftime('%Y-%m-%d')}"
-            f"&include_release_dates_with_no_data=true"
-            f"&api_key={fred_api_key}"
-            f"&file_type=json"
-        )
-        max_retries = 3
-        for attempt in range(max_retries):
-            try:
-                r = requests.get(url, timeout=20)
-                r.raise_for_status()
-                data  = r.json()
-                dates = [
-                    datetime.strptime(d["date"], "%Y-%m-%d").date()
-                    for d in data.get("release_dates", [])
-                    if datetime.strptime(d["date"], "%Y-%m-%d").date() >= today
-                ]
-                results[ind_name] = dates
-                logger.info(f"[FRED Release] {ind_name}: {[str(d) for d in dates]}")
-                time.sleep(0.3)  # API レート制限対策
-                break  # 成功したらリトライループを抜ける
-            except Exception as e:
-                wait = 2 ** attempt  # 1秒 → 2秒 → 4秒
-                if attempt < max_retries - 1:
-                    logger.warning(
-                        f"[FRED Release] {ind_name} (id={release_id}) "
-                        f"attempt {attempt + 1}/{max_retries}: {e} → retry in {wait}s"
-                    )
-                    time.sleep(wait)
-                else:
-                    logger.warning(
-                        f"[FRED Release] {ind_name} (id={release_id}) "
-                        f"failed after {max_retries} attempts: {e}"
-                    )
+        # release_id_alt が設定されている場合は両方取得してマージ
+        release_ids = [release_id]
+        if cfg.get("fred_release_id_alt"):
+            release_ids.append(cfg["fred_release_id_alt"])
 
-    return results
+        all_dates = []
+        for rid in release_ids:
+            url = (
+                f"https://api.stlouisfed.org/fred/release/dates"
+                f"?release_id={rid}"
+                f"&realtime_start={today.strftime('%Y-%m-%d')}"
+                f"&realtime_end={end_date.strftime('%Y-%m-%d')}"
+                f"&include_release_dates_with_no_data=true"
+                f"&api_key={fred_api_key}"
+                f"&file_type=json"
+            )
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    r = requests.get(url, timeout=20)
+                    r.raise_for_status()
+                    data  = r.json()
+                    dates = [
+                        datetime.strptime(d["date"], "%Y-%m-%d").date()
+                        for d in data.get("release_dates", [])
+                        if datetime.strptime(d["date"], "%Y-%m-%d").date() >= today
+                    ]
+                    all_dates.extend(dates)
+                    time.sleep(0.3)
+                    break
+                except Exception as e:
+                    wait = 2 ** attempt
+                    if attempt < max_retries - 1:
+                        logger.warning(
+                            f"[FRED Release] {ind_name} (id={rid}) "
+                            f"attempt {attempt + 1}/{max_retries}: {e} → retry in {wait}s"
+                        )
+                        time.sleep(wait)
+                    else:
+                        logger.warning(
+                            f"[FRED Release] {ind_name} (id={rid}) "
+                            f"failed after {max_retries} attempts: {e}"
+                        )
+
+        # 重複排除・ソート
+        unique_dates = sorted(set(all_dates))
+        results[ind_name] = unique_dates
+        logger.info(f"[FRED Release] {ind_name}: {[str(d) for d in unique_dates]}")
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -564,74 +574,93 @@ def get_ff_current(fred):
 # ─────────────────────────────────────────────────────────────────
 
 def fetch_latest_fomc_statement():
-    """FRBサイトから最新FOMC声明テキストを取得。失敗時はNone。"""
+    """
+    FRBサイトから最新FOMC声明テキストを取得。失敗時は (None, None)。
+
+    FRBの声明URLの正規パス:
+      /newsevents/pressreleases/monetary{YYYYMMDD}a.htm
+    カレンダーページで発見できない場合は既知FOMC日程から直接アクセス。
+    """
     import re
+
+    # ── Step1: カレンダーページから正規パスを走査 ─────────────────
+    cal_url = "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
+    found_url = None
+    fomc_date = None
+
     try:
-        cal_url = "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
         r = requests.get(cal_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=20)
         r.raise_for_status()
+        html = r.text
 
-        # FRBサイトの声明URLパターンを優先度順に試行
-        # 例: /monetarypolicy/20260129a1.htm
-        #     /monetarypolicy/monetary20260129a1.htm
-        #     /monetarypolicy/files/monetary20260129a1.htm
-        patterns = [
-            r'href="(/monetarypolicy/\d{8}a\d?\.htm)"',
-            r'href="(/monetarypolicy/monetary\d{8}a\d?\.htm)"',
-            r'href="(/monetarypolicy/files/monetary\d{8}a\d?\.htm)"',
-            r'/monetarypolicy/\d{8}a\d?\.htm',
-            r'/monetarypolicy/monetary\d{8}a\d?\.htm',
+        # 正規パスを優先順に探す
+        pats = [
+            r'href="(/newsevents/pressreleases/monetary(\d{8})a\d?\.htm)"',
+            r'href="(/monetarypolicy/(\d{8})a\d?\.htm)"',
+            r'href="(/monetarypolicy/monetary(\d{8})a\d?\.htm)"',
         ]
+        candidates = []
+        for pat in pats:
+            for path, dt in re.findall(pat, html):
+                candidates.append((dt, path))
 
-        urls = []
-        for pat in patterns:
-            found = re.findall(pat, r.text)
-            if found:
-                urls.extend(found)
+        if candidates:
+            candidates.sort(key=lambda x: x[0], reverse=True)
+            best_dt, best_path = candidates[0]
+            found_url = "https://www.federalreserve.gov" + best_path
+            fomc_date = datetime.strptime(best_dt, "%Y%m%d").strftime("%Y-%m-%d")
+            logger.info(f"FOMC statement URL found: {found_url}")
+
+    except Exception as e:
+        logger.warning(f"FOMC calendar fetch: {e}")
+
+    # ── Step2: 見つからない場合は既知FOMC日程から直接アクセス ─────
+    if not found_url:
+        logger.info("FOMC URL not found via scraping. Trying known schedule.")
+        known_fomc_dates = [
+            "20260318", "20260129",
+            "20251218", "20251107", "20250918", "20250730",
+        ]
+        from datetime import date as date_cls
+        today_str = date_cls.today().strftime("%Y%m%d")
+        past = sorted([d for d in known_fomc_dates if d <= today_str], reverse=True)
+        for best_dt in past:
+            url_candidates = [
+                f"https://www.federalreserve.gov/newsevents/pressreleases/monetary{best_dt}a.htm",
+                f"https://www.federalreserve.gov/monetarypolicy/{best_dt}a1.htm",
+            ]
+            for u in url_candidates:
+                try:
+                    r = requests.get(u, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
+                    if r.status_code == 200:
+                        found_url = u
+                        fomc_date = datetime.strptime(best_dt, "%Y%m%d").strftime("%Y-%m-%d")
+                        logger.info(f"FOMC statement URL (known schedule): {found_url}")
+                        break
+                except Exception as e:
+                    logger.warning(f"FOMC known URL [{u}]: {e}")
+            if found_url:
                 break
 
-        if not urls:
-            # より広いパターン：最新のFOMC日付リンクを探す
-            all_policy_links = re.findall(r'href="(/monetarypolicy/[^"]*20\d{6}[^"]*\.htm)"', r.text)
-            stmt_links = [u for u in all_policy_links if 'a1' in u or 'a.' in u or re.search(r'\d{8}a', u)]
-            urls = stmt_links
-            if not urls:
-                # 最終フォールバック: 最新のFOMC日付を自動構築
-                date_matches = re.findall(r'(\d{8})a', r.text)
-                if date_matches:
-                    latest = sorted(set(date_matches), reverse=True)[0]
-                    urls = [f"/monetarypolicy/{latest}a1.htm"]
-                    logger.info(f"FOMC URL constructed from date: {latest}")
+    if not found_url:
+        logger.warning("FOMC statement: all URL strategies failed.")
+        return None, None
 
-        if not urls:
-            logger.warning("FOMC statement URL not found in calendar page")
-            return None, None
-
-        # 最新（日付最大）
-        def extract_date(u):
-            m2 = re.search(r'(\d{8})', u)
-            return m2.group(1) if m2 else "0"
-
-        urls_sorted = sorted(set(urls), key=extract_date, reverse=True)
-        stmt_path = urls_sorted[0]
-        stmt_url = "https://www.federalreserve.gov" + stmt_path
-        fomc_date_str = extract_date(stmt_path)
-        fomc_date = datetime.strptime(fomc_date_str, "%Y%m%d").strftime("%Y-%m-%d")
-        logger.info(f"FOMC statement URL: {stmt_url}")
-
-        r2 = requests.get(stmt_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=20)
+    # ── Step3: 声明本文取得 ──────────────────────────────────────
+    try:
+        r2 = requests.get(found_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=20)
         r2.raise_for_status()
 
-        # HTMLからテキスト抽出
         text = re.sub(r'<[^>]+>', ' ', r2.text)
         text = re.sub(r'\s+', ' ', text).strip()
 
-        # 声明本文の開始を複数パターンで探す
         start = -1
-        for marker in ["Recent indicators", "Recent economic indicators",
-                        "The Federal Open Market Committee",
-                        "Information received since",
-                        "Labor market conditions"]:
+        for marker in [
+            "Recent indicators", "Recent economic indicators",
+            "The Federal Open Market Committee",
+            "Information received since",
+            "Labor market conditions", "Economic activity",
+        ]:
             idx = text.find(marker)
             if idx != -1:
                 start = idx
@@ -642,8 +671,10 @@ def fetch_latest_fomc_statement():
         return fomc_date, stmt_text
 
     except Exception as e:
-        logger.warning(f"FOMC statement fetch failed: {e}")
+        logger.warning(f"FOMC statement body fetch failed: {e}")
         return None, None
+
+
 
 
 def analyze_fomc_with_gemini(fomc_date: str, stmt_text: str, ff_current: float,
