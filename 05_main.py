@@ -1178,10 +1178,21 @@ def run(target_date: date, test_mode: bool = False, do_recalc: bool = False,
     })
     new_rows.append(yc_row)
 
-    # ── CSV upsert ──────────────────────────────────────────────
+    # ── CSV upsert（同日付+同指標名は上書き、新規は追記） ───────
     new_df = pd.DataFrame(new_rows, columns=CSV_COLUMNS)
-    frames = [f for f in [existing, new_df] if not f.empty]
-    combined = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=CSV_COLUMNS)
+    if existing.empty:
+        combined = new_df
+    else:
+        # (リリース日, 指標名) をキーに既存の重複行を除去してから結合
+        key_new = set(zip(new_df["リリース日"], new_df["指標名"]))
+        existing_filtered = existing[
+            ~existing.apply(
+                lambda r: (r["リリース日"], r["指標名"]) in key_new, axis=1
+            )
+        ]
+        combined = pd.concat([existing_filtered, new_df], ignore_index=True)
+    # リリース日昇順でソート
+    combined = combined.sort_values("リリース日", kind="stable").reset_index(drop=True)
     save_csv(combined)
     logger.info("=== Run complete ===")
 
