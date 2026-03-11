@@ -33,21 +33,42 @@ function getSurpriseIcon(surprise) {
 // --- データ読み込み ---
 
 async function loadEconomicData() {
+    // ステップ1: APIを試みる（失敗しても続行）
     try {
-        console.log('Fetching CSV data...');
-        // GitHub Actionsで更新されているCSVを直接取得
-        const response = await fetch('data/economic_history.csv?t=' + new Date().getTime()); // キャッシュ対策
-        if (!response.ok) throw new Error('CSVファイルの取得に失敗しました');
-        
-        const csvText = await response.text();
-        economicData = parseCSVData(csvText);
-        
-        console.log('Data loaded:', economicData.length, 'records');
-        updateDashboard();
+        const response = await fetch('tables/economic_indicators?page=1&limit=100&sort=リリース日');
+        if (response.ok) {
+            const result = await response.json();
+            economicData = result.data || [];
+        }
+        // response.ok が false でも throw しない → CSVフォールバックへ進む
     } catch (error) {
-        console.error('データ読み込みエラー:', error);
-        showError('データの読み込みに失敗しました。CSVファイルが存在するか確認してください。');
+        console.log('APIが利用不可、CSVにフォールバック:', error.message);
     }
+
+    // ステップ2: APIデータが空ならCSVを読み込む
+    if (economicData.length === 0) {
+        try {
+            const csvResponse = await fetch('data/economic_history.csv');
+            if (csvResponse.ok) {
+                const csvText = await csvResponse.text();
+                economicData = parseCSVData(csvText);
+            } else {
+                showError('CSVファイルが見つかりません');
+                return;
+            }
+        } catch (csvError) {
+            console.error('CSV読み込みエラー:', csvError);
+            showError('データの読み込みに失敗しました');
+            return;
+        }
+    }
+
+    if (economicData.length === 0) {
+        showError('データが見つかりません');
+        return;
+    }
+
+    updateDashboard();
 }
 
 function parseCSVData(csvText) {
