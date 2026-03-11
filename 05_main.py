@@ -500,12 +500,12 @@ ZQ_MONTH_CODE = {1:'F',2:'G',3:'H',4:'J',5:'K',6:'M',
 def get_zq_futures(target_date: date):
     """
     12ヶ月先のZQ先物価格を取得し (ticker, price, implied_rate) を返す。
-    stooq: ZQH7.CBT 形式
+
+    正規フォーマット: ZQH27（大文字・拡張子なし・年2桁）
+    例: 2026年3月時点の12ヶ月先 = 2027年3月限 = ZQH27
+
     失敗時は (None, None, None)
     """
-    future_date = date(target_date.year + (target_date.month + 11) // 12,
-                       (target_date.month + 11) % 12 + 1 if (target_date.month + 11) % 12 != 0 else 12,
-                       1)
     # 12ヶ月後の月を正確に計算
     y = target_date.year + (target_date.month + 11) // 12
     m = (target_date.month + 11) % 12 + 1
@@ -514,27 +514,35 @@ def get_zq_futures(target_date: date):
         y += 1
     future_date = date(y, m, 1)
 
-    mc   = ZQ_MONTH_CODE[future_date.month]
-    yr1  = str(future_date.year)[-1]   # 例 2027 → '7'
-    ticker = f"zq{mc.lower()}{yr1}.cbt"
-    logger.info(f"ZQ ticker: {ticker} ({future_date.strftime('%Y-%m')})")
+    mc  = ZQ_MONTH_CODE[future_date.month]   # 例: 'H'
+    yr2 = str(future_date.year)[-2:]          # 例: '27'
+    yr1 = str(future_date.year)[-1]           # 例: '7'
 
-    price = _stooq(ticker, target_date)
-    if price is None:
-        # フォールバック: 年2桁
-        yr2 = str(future_date.year)[-2:]
-        ticker2 = f"zq{mc.lower()}{yr2}.cbt"
-        price = _stooq(ticker2, target_date)
-        if price:
-            ticker = ticker2
+    # 正規フォーマット ZQH27 を最優先。小文字/拡張子付きをフォールバックに
+    candidates = [
+        f"ZQ{mc}{yr2}",        # ZQH27  ← 正規フォーマット（大文字・年2桁）
+        f"ZQ{mc}{yr1}",        # ZQH7   （年1桁）
+        f"zq{mc.lower()}{yr2}",        # zqh27
+        f"zq{mc.lower()}{yr2}.cbt",    # zqh27.cbt
+        f"zq{mc.lower()}{yr1}.cbt",    # zqh7.cbt
+    ]
+
+    price = None
+    used_ticker = None
+    for t in candidates:
+        logger.info(f"ZQ ticker attempt: {t} ({future_date.strftime('%Y-%m')})")
+        price = _stooq(t, target_date)
+        if price is not None:
+            used_ticker = t
+            break
 
     if price is None:
-        logger.warning("ZQ futures: could not retrieve price")
+        logger.warning("ZQ futures: could not retrieve price for any ticker format")
         return None, None, None
 
     implied_rate = round(100.0 - price, 4)
-    logger.info(f"ZQ price: {price} → implied FF rate: {implied_rate}%")
-    return ticker.upper(), price, implied_rate
+    logger.info(f"ZQ price: {price} → implied FF rate: {implied_rate}% (ticker={used_ticker})")
+    return used_ticker.upper(), price, implied_rate
 
 
 def get_ff_current(fred):
@@ -562,37 +570,79 @@ def get_ff_current(fred):
 
 def fetch_latest_fomc_statement():
     """FRBサイトから最新FOMC声明テキストを取得。失敗時はNone。"""
+    import re
     try:
-        # FRBの金融政策声明一覧ページ
         cal_url = "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
         r = requests.get(cal_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=20)
         r.raise_for_status()
-        # 声明URLパターン: /monetarypolicy/files/monetary{YYYYMMDD}a1.htm
-        import re
-        # 最新の声明リンクを探す
-        urls = re.findall(r'/monetarypolicy/monetary\d{8}a\.htm', r.text)
+
+        # FRBサイトの声明URLパターンを優先度順に試行
+        # 例: /monetarypolicy/20260129a1.htm
+        #     /monetarypolicy/monetary20260129a1.htm
+        #     /monetarypolicy/files/monetary20260129a1.htm
+        patterns = [
+            r'href="(/monetarypolicy/\d{8}a\d?\.htm)"',
+            r'href="(/monetarypolicy/monetary\d{8}a\d?\.htm)"',
+            r'href="(/monetarypolicy/files/monetary\d{8}a\d?\.htm)"',
+            r'/monetarypolicy/\d{8}a\d?\.htm',
+            r'/monetarypolicy/monetary\d{8}a\d?\.htm',
+        ]
+
+        urls = []
+        for pat in patterns:
+            found = re.findall(pat, r.text)
+            if found:
+                urls.extend(found)
+                break
+
         if not urls:
-            urls = re.findall(r'/monetarypolicy/files/monetary\d{8}a\d?\.htm', r.text)
+            # より広いパターン：最新のFOMC日付リンクを探す
+            all_policy_links = re.findall(r'href="(/monetarypolicy/[^"]*20\d{6}[^"]*\.htm)"', r.text)
+            stmt_links = [u for u in all_policy_links if 'a1' in u or 'a.' in u or re.search(r'\d{8}a', u)]
+            urls = stmt_links
+            if not urls:
+                # 最終フォールバック: 最新のFOMC日付を自動構築
+                date_matches = re.findall(r'(\d{8})a', r.text)
+                if date_matches:
+                    latest = sorted(set(date_matches), reverse=True)[0]
+                    urls = [f"/monetarypolicy/{latest}a1.htm"]
+                    logger.info(f"FOMC URL constructed from date: {latest}")
+
         if not urls:
             logger.warning("FOMC statement URL not found in calendar page")
             return None, None
 
         # 最新（日付最大）
-        urls_sorted = sorted(set(urls), reverse=True)
-        stmt_url = "https://www.federalreserve.gov" + urls_sorted[0]
-        fomc_date_str = re.search(r'monetary(\d{8})', urls_sorted[0]).group(1)
+        def extract_date(u):
+            m2 = re.search(r'(\d{8})', u)
+            return m2.group(1) if m2 else "0"
+
+        urls_sorted = sorted(set(urls), key=extract_date, reverse=True)
+        stmt_path = urls_sorted[0]
+        stmt_url = "https://www.federalreserve.gov" + stmt_path
+        fomc_date_str = extract_date(stmt_path)
         fomc_date = datetime.strptime(fomc_date_str, "%Y%m%d").strftime("%Y-%m-%d")
+        logger.info(f"FOMC statement URL: {stmt_url}")
 
         r2 = requests.get(stmt_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=20)
         r2.raise_for_status()
-        # HTMLからテキスト抽出（簡易）
+
+        # HTMLからテキスト抽出
         text = re.sub(r'<[^>]+>', ' ', r2.text)
         text = re.sub(r'\s+', ' ', text).strip()
-        # 声明本文部分（約2000文字）
-        start = text.find("Recent indicators")
-        if start == -1:
-            start = text.find("The Federal Open Market")
-        stmt_text = text[start:start+3000] if start != -1 else text[:3000]
+
+        # 声明本文の開始を複数パターンで探す
+        start = -1
+        for marker in ["Recent indicators", "Recent economic indicators",
+                        "The Federal Open Market Committee",
+                        "Information received since",
+                        "Labor market conditions"]:
+            idx = text.find(marker)
+            if idx != -1:
+                start = idx
+                break
+
+        stmt_text = text[start:start+3000] if start != -1 else text[500:3500]
         logger.info(f"FOMC statement fetched: {fomc_date} ({len(stmt_text)} chars)")
         return fomc_date, stmt_text
 
