@@ -1,256 +1,790 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MACRO PULSE</title>
-  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg:#0a0d14; --sur:#111520; --sur2:#161c2d; --bdr:#1e2840;
-      --acc:#3b82f6; --grn:#10b981; --red:#f43f5e; --amb:#f59e0b;
-      --txt:#e2e8f0; --mut:#64748b;
-      --mono:'Space Mono',monospace; --sans:'DM Sans',sans-serif;
-    }
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{background:var(--bg);color:var(--txt);font-family:var(--sans);font-size:14px;min-height:100vh;overflow-x:hidden}
-    body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.03) 2px,rgba(0,0,0,.03) 4px);pointer-events:none;z-index:999}
-    .shell{max-width:1440px;margin:0 auto;padding:0 24px 64px}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MACRO PULSE v5</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<style>
+:root {
+  --bg: #080b10;
+  --s1: #0d1117;
+  --s2: #111820;
+  --s3: #161f2c;
+  --bdr: #1c2a3a;
+  --bdr2: #243447;
+  --acc: #00d4ff;
+  --acc2: #0099cc;
+  --pos: #00e5a0;
+  --neg: #ff4466;
+  --warn: #ffaa00;
+  --neu: #4a6880;
+  --txt: #c8d8e8;
+  --txt2: #7a98b0;
+  --txt3: #3a5570;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
 
-    /* ── Header ── */
-    header{border-bottom:1px solid var(--bdr);padding:20px 0;display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
-    .logo{font-family:var(--mono);font-size:18px;font-weight:700;letter-spacing:.15em;display:flex;align-items:center;gap:12px}
-    .logo-dot{width:8px;height:8px;background:var(--acc);border-radius:50%;animation:pdot 2s ease-in-out infinite}
-    @keyframes pdot{0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,.4)}50%{box-shadow:0 0 0 6px rgba(59,130,246,0)}}
-    .hdr-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-    .ts{font-family:var(--mono);font-size:11px;color:var(--mut);margin-right:4px}
+  /* Regime colors */
+  --easing: #00d4ff;
+  --tightening: #ff4466;
+  --balanced: #ffaa00;
+}
 
-    /* ── Buttons ── */
-    .btn{font-family:var(--mono);font-size:11px;letter-spacing:.08em;border:1px solid var(--bdr);padding:7px 14px;cursor:pointer;transition:all .2s;background:transparent;color:var(--mut)}
-    .btn:hover{border-color:var(--acc);color:var(--acc)}
-    .btn-p{background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.35);color:var(--acc)}
-    .btn-p:hover{background:rgba(59,130,246,.22)}
-    .btn-w{background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.3);color:var(--amb)}
-    .btn-w:hover{background:rgba(245,158,11,.18)}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    /* ── Notice ── */
-    .notice{padding:10px 16px;display:none;align-items:flex-start;gap:10px;margin-bottom:14px;border-left:3px solid;font-size:12px;line-height:1.6}
-    .n-ok  {border-color:var(--grn);background:rgba(16,185,129,.07)}
-    .n-warn{border-color:var(--amb);background:rgba(245,158,11,.07)}
-    .n-info{border-color:var(--acc);background:rgba(59,130,246,.07)}
-    .ntag  {font-family:var(--mono);font-size:10px;white-space:nowrap;padding-top:2px}
-    .n-ok .ntag{color:var(--grn)} .n-warn .ntag{color:var(--amb)} .n-info .ntag{color:var(--acc)}
+body {
+  background: var(--bg);
+  color: var(--txt);
+  font-family: var(--sans);
+  font-size: 13px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
 
-    /* ── Recalc banner ── */
-    .rbanner{background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);border-left:3px solid var(--acc);padding:10px 16px;margin-bottom:14px;display:none;align-items:center;justify-content:space-between;gap:12px}
-    .rbanner.on{display:flex}
-    .rbmsg{font-size:12px;color:#94a3b8}
-    .rbmsg strong{color:var(--acc);font-family:var(--mono)}
-    .btn-rc{font-family:var(--mono);font-size:11px;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.4);color:var(--acc);padding:6px 14px;cursor:pointer;transition:all .2s}
-    .btn-rc:hover{background:rgba(59,130,246,.28)}
+/* Scanline overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,212,255,.012) 3px, rgba(0,212,255,.012) 4px);
+  pointer-events: none;
+  z-index: 9999;
+}
 
-    /* ── Ticker ── */
-    .ticker{background:var(--sur);border:1px solid var(--bdr);border-left:3px solid var(--acc);padding:12px 20px;display:flex;gap:28px;margin-bottom:22px;overflow-x:auto;scrollbar-width:none}
-    .ticker::-webkit-scrollbar{display:none}
-    .tick{display:flex;flex-direction:column;gap:2px;min-width:max-content}
-    .tl{font-family:var(--mono);font-size:10px;color:var(--mut);letter-spacing:.1em}
-    .tv{font-family:var(--mono);font-size:16px;font-weight:700}
-    .ts2{font-size:11px}
-    .tsep{width:1px;background:var(--bdr);align-self:stretch}
-    .up{color:var(--grn)} .dn{color:var(--red)} .neu{color:var(--mut)}
+/* ═══════════════════════════════════════════════
+   REGIME BAR (sticky top)
+═══════════════════════════════════════════════ */
+#regimeBar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--s1);
+  border-bottom: 1px solid var(--bdr);
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  transition: border-color .3s;
+}
+#regimeBar.easing  { border-bottom-color: var(--easing); }
+#regimeBar.tightening { border-bottom-color: var(--tightening); }
+#regimeBar.balanced   { border-bottom-color: var(--balanced); }
 
-    /* ── Section label ── */
-    .sec{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--mut);text-transform:uppercase;margin:28px 0 12px;display:flex;align-items:center;gap:12px}
-    .sec::after{content:'';flex:1;height:1px;background:var(--bdr)}
+.logo {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .2em;
+  color: var(--acc);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo-pulse {
+  width: 6px; height: 6px;
+  background: var(--acc);
+  border-radius: 50%;
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(0,212,255,.5); }
+  50%      { box-shadow: 0 0 0 6px rgba(0,212,255,0); }
+}
 
-    /* ── Panel ── */
-    .panel{background:var(--sur);border:1px solid var(--bdr);padding:20px;position:relative;overflow:hidden}
-    .panel::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,var(--acc) 0%,transparent 60%)}
-    .ptitle{font-family:var(--mono);font-size:10px;letter-spacing:.15em;color:var(--mut);text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px}
-    .ptitle::before{content:'';width:4px;height:4px;background:var(--acc);flex-shrink:0}
+.regime-pills {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.rpill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .08em;
+}
+.rpill-lbl { color: var(--txt3); }
+.rpill-val { font-weight: 600; }
+.rpill-val.easing     { color: var(--easing); }
+.rpill-val.tightening { color: var(--tightening); }
+.rpill-val.balanced   { color: var(--balanced); }
+.rpill-val.pos { color: var(--pos); }
+.rpill-val.neg { color: var(--neg); }
 
-    /* ── Grid ── */
-    .g2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
-    .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
-    .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
-    @media(max-width:1100px){.g4{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr}}
-    @media(max-width:768px){.g2,.g3,.g4{grid-template-columns:1fr}}
+.regime-badge {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .12em;
+  padding: 3px 10px;
+  border: 1px solid;
+  border-radius: 2px;
+  font-weight: 600;
+}
+.regime-badge.easing     { color: var(--easing);     border-color: var(--easing);     background: rgba(0,212,255,.08); }
+.regime-badge.tightening { color: var(--tightening); border-color: var(--tightening); background: rgba(255,68,102,.08); }
+.regime-badge.balanced   { color: var(--balanced);   border-color: var(--balanced);   background: rgba(255,170,0,.08); }
 
-    /* ── KPI ── */
-    .kval{font-family:var(--mono);font-size:28px;font-weight:700;line-height:1;margin-bottom:4px}
-    .klbl{font-size:12px;color:var(--mut);margin-bottom:8px}
-    .badge{font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:2px;display:inline-block}
-    .bg-g{background:rgba(16,185,129,.1);color:var(--grn);border:1px solid rgba(16,185,129,.2)}
-    .bg-r{background:rgba(244,63,94,.1); color:var(--red);border:1px solid rgba(244,63,94,.2)}
-    .bg-a{background:rgba(245,158,11,.1);color:var(--amb);border:1px solid rgba(245,158,11,.2)}
-    .bg-m{background:rgba(100,116,139,.1);color:var(--mut);border:1px solid rgba(100,116,139,.2)}
-    .bg-b{background:rgba(59,130,246,.1);color:var(--acc);border:1px solid rgba(59,130,246,.2)}
+.hdr-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.ts-small { font-family: var(--mono); font-size: 10px; color: var(--txt3); }
 
-    /* ── Indicator grid / card ── */
-    .ig{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:18px}
-    .ic{background:var(--sur);border:1px solid var(--bdr);padding:18px;transition:border-color .2s}
-    .ic:hover{border-color:rgba(59,130,246,.4)}
-    .ic-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
-    .ic-name{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--mut);text-transform:uppercase;max-width:66%;line-height:1.4}
-    .ic-val{font-family:var(--mono);font-size:30px;font-weight:700;line-height:1;margin-bottom:10px}
-    .ic-meta{display:flex;gap:14px;margin-bottom:8px;flex-wrap:wrap}
-    .icm{display:flex;flex-direction:column;gap:2px}
-    .icm-l{font-size:10px;color:var(--mut)}
-    .icm-v{font-family:var(--mono);font-size:13px}
-    .ic-bar{height:3px;background:var(--bdr);border-radius:2px;overflow:hidden;margin-bottom:8px}
-    .ic-bar-f{height:100%;border-radius:2px;transition:width .8s}
-    .ic-date{font-family:var(--mono);font-size:10px;color:var(--mut);margin-bottom:12px}
+/* ═══════════════════════════════════════════════
+   MARKET TICKER
+═══════════════════════════════════════════════ */
+.ticker {
+  background: var(--s1);
+  border-bottom: 1px solid var(--bdr);
+  padding: 0 24px;
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.ticker::-webkit-scrollbar { display: none; }
 
-    /* ── Forecast area ── */
-    .fc-area{border-top:1px solid var(--bdr);padding-top:12px}
-    .fc-lbl{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--mut);margin-bottom:6px;display:flex;align-items:center;gap:6px}
-    .stag{font-size:9px;padding:1px 5px;border-radius:2px;font-family:var(--mono)}
-    .s-aaf{background:rgba(100,116,139,.15);color:var(--mut)}
-    .s-usr{background:rgba(59,130,246,.15);color:var(--acc)}
-    .s-ret{background:rgba(16,185,129,.15);color:var(--grn)}
-    .s-non{background:rgba(100,116,139,.1);color:var(--mut)}
-    .fc-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
-    .fc-inp{font-family:var(--mono);font-size:13px;background:var(--sur2);border:1px solid var(--bdr);color:var(--txt);padding:6px 10px;flex:1;outline:none;transition:border-color .2s;min-width:0}
-    .fc-inp:focus{border-color:var(--acc)}
-    .fc-inp.filled{border-color:rgba(59,130,246,.5)}
-    .btn-sv{font-family:var(--mono);font-size:10px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);color:var(--acc);padding:6px 12px;cursor:pointer;white-space:nowrap;transition:all .2s}
-    .btn-sv:hover{background:rgba(59,130,246,.22)}
-    .fc-res{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-    .surp{font-family:var(--mono);font-size:13px;font-weight:700}
-    .surp-aaf{color:var(--mut)}
-    .surp-meta{font-size:11px;color:var(--mut)}
+.tick-item {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 10px 20px 10px 0;
+  min-width: max-content;
+  border-right: 1px solid var(--bdr);
+  margin-right: 20px;
+}
+.tick-item:last-child { border-right: none; }
+.tick-lbl { font-family: var(--mono); font-size: 9px; letter-spacing: .12em; color: var(--txt3); }
+.tick-val { font-family: var(--mono); font-size: 15px; font-weight: 600; color: var(--txt); }
+.tick-sub { font-family: var(--mono); font-size: 10px; }
+.up  { color: var(--pos); }
+.dn  { color: var(--neg); }
+.neu { color: var(--neu); }
 
-    /* ── Charts ── */
-    .cw {height:300px}
-    .cwl{height:360px}
+/* ═══════════════════════════════════════════════
+   MAIN SHELL
+═══════════════════════════════════════════════ */
+.shell {
+  max-width: 1520px;
+  margin: 0 auto;
+  padding: 24px 24px 80px;
+}
 
-    /* ── Table ── */
-    .tw{overflow-x:auto;margin-top:6px}
-    table{width:100%;border-collapse:collapse;font-size:12px}
-    thead tr{border-bottom:1px solid var(--bdr)}
-    th{font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--mut);text-transform:uppercase;padding:10px 12px;text-align:left;white-space:nowrap}
-    td{padding:9px 12px;border-bottom:1px solid rgba(30,40,64,.5);white-space:nowrap}
-    tr:hover td{background:rgba(255,255,255,.02)}
-    .tm{font-family:var(--mono)}
-    .td-n{max-width:180px;white-space:normal;line-height:1.4}
-    .td-r{font-size:11px;color:var(--mut);max-width:200px;white-space:normal;line-height:1.4}
+/* Section header */
+.sec {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .25em;
+  color: var(--txt3);
+  text-transform: uppercase;
+  margin: 32px 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sec::after { content: ''; flex: 1; height: 1px; background: var(--bdr); }
+.sec-tag {
+  font-size: 8px;
+  padding: 2px 6px;
+  border: 1px solid var(--bdr2);
+  color: var(--txt3);
+  border-radius: 2px;
+}
 
-    /* ── Filters ── */
-    .filters{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
-    .fsel,.finp{font-family:var(--mono);font-size:11px;background:var(--sur2);border:1px solid var(--bdr);color:var(--txt);padding:7px 10px;outline:none;cursor:pointer;transition:border-color .2s}
-    .fsel:focus,.finp:focus{border-color:var(--acc)}
+/* Panel */
+.panel {
+  background: var(--s1);
+  border: 1px solid var(--bdr);
+  padding: 18px;
+  position: relative;
+}
+.panel::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--acc) 0%, transparent 50%);
+  opacity: .4;
+}
+.ptitle {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .15em;
+  color: var(--txt3);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ptitle::before { content: ''; width: 3px; height: 3px; background: var(--acc); flex-shrink: 0; }
 
-    /* ── Tracking ── */
-    .tr-sum{display:flex;gap:28px;margin-bottom:14px;flex-wrap:wrap}
-    .tr-k{display:flex;flex-direction:column;gap:2px}
-    .tr-kv{font-family:var(--mono);font-size:22px;font-weight:700}
-    .tr-kl{font-size:11px;color:var(--mut)}
+/* Grids */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.g3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 16px; }
+@media(max-width:1100px) { .g2,.g3 { grid-template-columns: 1fr 1fr; } }
+@media(max-width:700px)  { .g2,.g3 { grid-template-columns: 1fr; } }
 
-    /* ── Misc ── */
-    .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--bdr);border-top-color:var(--acc);border-radius:50%;animation:sp .8s linear infinite}
-    @keyframes sp{to{transform:rotate(360deg)}}
-    .empty{text-align:center;padding:40px;color:var(--mut);font-family:var(--mono);font-size:11px}
-    .fi{animation:fadein .35s ease forwards}
-    @keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-  </style>
+/* ═══════════════════════════════════════════════
+   CONSENSUS STATUS CARDS
+═══════════════════════════════════════════════ */
+.cs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.cs-card {
+  background: var(--s1);
+  border: 1px solid var(--bdr);
+  padding: 16px;
+  position: relative;
+  transition: border-color .2s;
+}
+.cs-card:hover { border-color: var(--bdr2); }
+.cs-card.status-ok    { border-left: 3px solid var(--pos); }
+.cs-card.status-auto  { border-left: 3px solid var(--warn); }
+.cs-card.status-empty { border-left: 3px solid var(--txt3); }
+
+.cs-name {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .1em;
+  color: var(--txt2);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.cs-val {
+  font-family: var(--mono);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--txt);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.cs-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.cs-meta {
+  display: flex;
+  gap: 14px;
+}
+.cs-m { display: flex; flex-direction: column; gap: 1px; }
+.cs-ml { font-size: 9px; color: var(--txt3); }
+.cs-mv { font-family: var(--mono); font-size: 11px; color: var(--txt2); }
+
+/* Consensus input */
+.cs-input-area {
+  border-top: 1px solid var(--bdr);
+  padding-top: 10px;
+  margin-top: 4px;
+}
+.cs-input-lbl {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .08em;
+  color: var(--txt3);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.status-badge {
+  font-size: 8px;
+  padding: 1px 5px;
+  border-radius: 1px;
+  font-family: var(--mono);
+}
+.sb-ok    { background: rgba(0,229,160,.12); color: var(--pos); border: 1px solid rgba(0,229,160,.3); }
+.sb-auto  { background: rgba(255,170,0,.10); color: var(--warn); border: 1px solid rgba(255,170,0,.3); }
+.sb-empty { background: rgba(74,104,128,.10); color: var(--neu); border: 1px solid rgba(74,104,128,.3); }
+
+.cs-inp-row { display: flex; gap: 6px; align-items: center; }
+.cs-inp {
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--s2);
+  border: 1px solid var(--bdr);
+  color: var(--txt);
+  padding: 6px 10px;
+  outline: none;
+  transition: border-color .2s;
+}
+.cs-inp:focus { border-color: var(--acc2); }
+.cs-inp.has-val { border-color: rgba(0,229,160,.4); }
+.btn-save {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .08em;
+  background: rgba(0,212,255,.08);
+  border: 1px solid rgba(0,212,255,.25);
+  color: var(--acc);
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.btn-save:hover { background: rgba(0,212,255,.16); }
+
+.cs-surprise {
+  margin-top: 6px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Next release */
+.cs-next {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--txt3);
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.cs-next-date { color: var(--acc2); }
+.cs-countdown {
+  font-size: 9px;
+  padding: 1px 5px;
+  background: rgba(0,212,255,.06);
+  border: 1px solid rgba(0,212,255,.15);
+  color: var(--acc2);
+  border-radius: 1px;
+}
+
+/* ═══════════════════════════════════════════════
+   NARRATIVE TIMELINE
+═══════════════════════════════════════════════ */
+.timeline {
+  position: relative;
+  padding-left: 0;
+}
+
+.tl-month-block { margin-bottom: 8px; }
+
+.tl-month-hdr {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--s2);
+  border: 1px solid var(--bdr);
+  border-left: 3px solid var(--bdr2);
+  margin-bottom: 2px;
+  cursor: pointer;
+  user-select: none;
+}
+.tl-month-hdr.easing     { border-left-color: var(--easing); }
+.tl-month-hdr.tightening { border-left-color: var(--tightening); }
+.tl-month-hdr.balanced   { border-left-color: var(--balanced); }
+
+.tl-month-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--txt);
+  letter-spacing: .08em;
+  min-width: 80px;
+}
+.tl-month-regime {
+  font-family: var(--mono);
+  font-size: 9px;
+  padding: 2px 8px;
+  border: 1px solid;
+  border-radius: 1px;
+  letter-spacing: .1em;
+}
+.tl-month-regime.easing     { color: var(--easing); border-color: rgba(0,212,255,.3); background: rgba(0,212,255,.06); }
+.tl-month-regime.tightening { color: var(--tightening); border-color: rgba(255,68,102,.3); background: rgba(255,68,102,.06); }
+.tl-month-regime.balanced   { color: var(--balanced); border-color: rgba(255,170,0,.3); background: rgba(255,170,0,.06); }
+
+.tl-month-dominant {
+  font-size: 10px;
+  color: var(--txt2);
+}
+.tl-month-zq {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--txt3);
+  margin-left: auto;
+}
+.tl-month-toggle {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--txt3);
+  margin-left: 4px;
+  transition: transform .2s;
+}
+.tl-month-toggle.open { transform: rotate(90deg); }
+
+.tl-events {
+  border-left: 1px solid var(--bdr);
+  margin-left: 20px;
+  padding-left: 0;
+  overflow: hidden;
+  max-height: 2000px;
+  transition: max-height .3s ease;
+}
+.tl-events.collapsed { max-height: 0; }
+
+.tl-event {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 0;
+  border-bottom: 1px solid var(--bdr);
+  transition: background .15s;
+}
+.tl-event:hover { background: rgba(255,255,255,.015); }
+
+.tl-event-date {
+  padding: 12px 14px;
+  border-right: 1px solid var(--bdr);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.tl-date-val {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--txt2);
+}
+.tl-sp-chg {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.tl-event-body { padding: 12px 16px; }
+
+.tl-event-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.tl-ind-name {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .06em;
+  color: var(--txt2);
+  flex: 1;
+}
+.tl-actual {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--txt);
+}
+.tl-vs-consensus {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--txt3);
+}
+
+.impact-badge {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: .1em;
+  padding: 2px 7px;
+  border-radius: 1px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.impact-pos      { background: rgba(0,229,160,.12); color: var(--pos); border: 1px solid rgba(0,229,160,.3); }
+.impact-neg      { background: rgba(255,68,102,.10); color: var(--neg); border: 1px solid rgba(255,68,102,.3); }
+.impact-mixed    { background: rgba(255,170,0,.10);  color: var(--warn); border: 1px solid rgba(255,170,0,.3); }
+.impact-neutral  { background: rgba(74,104,128,.10); color: var(--neu); border: 1px solid rgba(74,104,128,.3); }
+
+.tl-narrative {
+  font-size: 11px;
+  color: var(--txt2);
+  line-height: 1.6;
+  border-left: 2px solid var(--bdr2);
+  padding-left: 10px;
+  margin-top: 4px;
+}
+
+/* Upcoming event */
+.tl-event.upcoming {
+  background: rgba(0,212,255,.02);
+  border-left: 2px solid rgba(0,212,255,.2);
+}
+.tl-event.upcoming .tl-date-val { color: var(--acc2); }
+.upcoming-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: .1em;
+  color: var(--acc2);
+  border: 1px solid rgba(0,212,255,.2);
+  padding: 1px 5px;
+  border-radius: 1px;
+}
+
+/* ═══════════════════════════════════════════════
+   CHARTS
+═══════════════════════════════════════════════ */
+.cw  { height: 280px; }
+.cwl { height: 340px; }
+
+/* ═══════════════════════════════════════════════
+   DATA TABLE
+═══════════════════════════════════════════════ */
+.tbl-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.fsel, .finp {
+  font-family: var(--mono);
+  font-size: 10px;
+  background: var(--s2);
+  border: 1px solid var(--bdr);
+  color: var(--txt);
+  padding: 6px 10px;
+  outline: none;
+  cursor: pointer;
+}
+.fsel:focus, .finp:focus { border-color: var(--acc2); }
+.twrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 11px; }
+thead tr { border-bottom: 1px solid var(--bdr2); }
+th {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: .15em;
+  color: var(--txt3);
+  text-transform: uppercase;
+  padding: 10px 12px;
+  text-align: left;
+  white-space: nowrap;
+}
+td { padding: 8px 12px; border-bottom: 1px solid rgba(28,42,58,.6); white-space: nowrap; }
+tr:hover td { background: rgba(255,255,255,.015); }
+.tm { font-family: var(--mono); }
+.td-n { max-width: 200px; white-space: normal; line-height: 1.4; }
+
+/* ═══════════════════════════════════════════════
+   BUTTONS & MISC
+═══════════════════════════════════════════════ */
+.btn {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .08em;
+  border: 1px solid var(--bdr);
+  padding: 6px 12px;
+  cursor: pointer;
+  background: transparent;
+  color: var(--txt3);
+  transition: all .2s;
+}
+.btn:hover { border-color: var(--acc2); color: var(--acc); }
+.btn-p { background: rgba(0,212,255,.08); border-color: rgba(0,212,255,.3); color: var(--acc); }
+.btn-p:hover { background: rgba(0,212,255,.16); }
+
+.notice {
+  display: none;
+  padding: 9px 16px;
+  margin-bottom: 12px;
+  border-left: 3px solid;
+  font-size: 11px;
+  align-items: center;
+  gap: 10px;
+}
+.n-ok   { display: flex; border-color: var(--pos);  background: rgba(0,229,160,.06); color: var(--pos); }
+.n-warn { display: flex; border-color: var(--warn); background: rgba(255,170,0,.06); color: var(--warn); }
+.n-err  { display: flex; border-color: var(--neg);  background: rgba(255,68,102,.06); color: var(--neg); }
+.ntag { font-family: var(--mono); font-size: 9px; letter-spacing: .1em; white-space: nowrap; }
+
+.empty {
+  text-align: center;
+  padding: 48px;
+  color: var(--txt3);
+  font-family: var(--mono);
+  font-size: 10px;
+}
+.spin {
+  display: inline-block;
+  width: 12px; height: 12px;
+  border: 2px solid var(--bdr2);
+  border-top-color: var(--acc);
+  border-radius: 50%;
+  animation: sp .8s linear infinite;
+}
+@keyframes sp { to { transform: rotate(360deg); } }
+
+.fade-in { animation: fi .3s ease forwards; }
+@keyframes fi { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
+
+/* Regime AI note */
+.ai-note {
+  font-size: 10px;
+  color: var(--txt2);
+  line-height: 1.6;
+  padding: 10px 14px;
+  background: var(--s2);
+  border: 1px solid var(--bdr);
+  border-left: 3px solid var(--acc2);
+  margin-top: 8px;
+}
+.ai-note-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: .1em;
+  color: var(--acc2);
+  margin-bottom: 4px;
+}
+</style>
 </head>
 <body>
+
+<!-- ═══ REGIME BAR ═══ -->
+<div id="regimeBar" class="easing">
+  <div class="logo">
+    <span class="logo-pulse"></span>
+    MACRO PULSE
+    <span style="font-size:9px;color:var(--txt3);letter-spacing:.1em">v5</span>
+  </div>
+  <div class="regime-pills">
+    <div class="rpill">
+      <span class="rpill-lbl">REGIME</span>
+      <span class="regime-badge easing" id="rg-badge">EASING</span>
+    </div>
+    <div class="rpill">
+      <span class="rpill-lbl">FF現在</span>
+      <span class="rpill-val" id="rg-ff">—</span>
+    </div>
+    <div class="rpill">
+      <span class="rpill-lbl">1年後期待</span>
+      <span class="rpill-val" id="rg-zq">—</span>
+    </div>
+    <div class="rpill">
+      <span class="rpill-lbl">織り込み</span>
+      <span class="rpill-val" id="rg-cuts">—</span>
+    </div>
+    <div class="rpill">
+      <span class="rpill-lbl">FRB主眼</span>
+      <span class="rpill-val" id="rg-dominant">—</span>
+    </div>
+  </div>
+  <div class="hdr-actions">
+    <span class="ts-small" id="ts">—</span>
+    <button class="btn" onclick="loadDemoData()">DEMO</button>
+    <button class="btn btn-p" onclick="loadCSVData()">↻ 更新</button>
+  </div>
+</div>
+
+<!-- ═══ TICKER ═══ -->
+<div class="ticker">
+  <div class="tick-item">
+    <span class="tick-lbl">S&P 500</span>
+    <span class="tick-val" id="tk-sp">—</span>
+    <span class="tick-sub" id="tk-sp-c">—</span>
+  </div>
+  <div class="tick-item">
+    <span class="tick-lbl">NASDAQ</span>
+    <span class="tick-val" id="tk-nq">—</span>
+    <span class="tick-sub" id="tk-nq-c">—</span>
+  </div>
+  <div class="tick-item">
+    <span class="tick-lbl">10Y−2Y</span>
+    <span class="tick-val" id="tk-yc">—</span>
+    <span class="tick-sub" id="tk-yc-s">—</span>
+  </div>
+  <div class="tick-item">
+    <span class="tick-lbl">ZQ 12M PRICE</span>
+    <span class="tick-val" id="tk-zq">—</span>
+    <span class="tick-sub neu">FF先物</span>
+  </div>
+  <div class="tick-item">
+    <span class="tick-lbl">LAST UPDATE</span>
+    <span class="tick-val" style="font-size:12px" id="tk-last">—</span>
+    <span class="tick-sub neu" id="tk-src">—</span>
+  </div>
+</div>
+
 <div class="shell">
 
-  <header>
-    <div class="logo"><span class="logo-dot"></span>MACRO PULSE</div>
-    <div class="hdr-r">
-      <span class="ts" id="ts">--</span>
-      <button class="btn" onclick="exportForecasts()">↓ 予想CSV</button>
-      <button class="btn btn-w" onclick="loadDemoData()">DEMO</button>
-      <button class="btn btn-p" onclick="loadCSVData()">↻ 更新</button>
-    </div>
-  </header>
+  <div id="notice" class="notice"><span class="ntag" id="ntag">OK</span><span id="nmsg"></span></div>
 
-  <!-- Notices -->
-  <div id="notice" class="notice"><span class="ntag" id="ntag">INFO</span><span id="nmsg"></span></div>
-  <div id="rbanner" class="rbanner">
-    <span class="rbmsg"><strong id="rcount">0</strong> 件の予想値が変更されました — Surprise を再計算できます</span>
-    <button class="btn-rc" onclick="runRecalc()">↺ 再計算実行</button>
+  <!-- ═══ CONSENSUS STATUS ═══ -->
+  <div class="sec">CONSENSUS STATUS <span class="sec-tag">コンセンサス入力状況</span></div>
+  <div class="cs-grid" id="csGrid">
+    <div class="empty"><span class="spin"></span><br><br>Loading...</div>
   </div>
 
-  <!-- Ticker -->
-  <div class="ticker">
-    <div class="tick"><span class="tl">S&amp;P 500</span><span class="tv" id="tk-sp">—</span><span class="ts2" id="tk-sp-c">—</span></div>
-    <div class="tsep"></div>
-    <div class="tick"><span class="tl">NASDAQ</span><span class="tv" id="tk-nq">—</span><span class="ts2" id="tk-nq-c">—</span></div>
-    <div class="tsep"></div>
-    <div class="tick"><span class="tl">10Y-2Y SPREAD</span><span class="tv" id="tk-yc">—</span><span class="ts2" id="tk-yc-i">—</span></div>
-    <div class="tsep"></div>
-    <div class="tick"><span class="tl">予想入力率</span><span class="tv" id="tk-fc">—</span><span class="ts2 neu">forecast coverage</span></div>
-    <div class="tsep"></div>
-    <div class="tick"><span class="tl">LAST UPDATE</span><span class="tv" style="font-size:13px" id="tk-last">—</span><span class="ts2 neu" id="tk-src">—</span></div>
+  <!-- ═══ NARRATIVE TIMELINE ═══ -->
+  <div class="sec">NARRATIVE TIMELINE <span class="sec-tag">指標ストーリー</span></div>
+  <div class="timeline" id="timeline">
+    <div class="empty"><span class="spin"></span><br><br>Loading...</div>
   </div>
 
-  <!-- KPIs -->
-  <div class="sec">SURPRISE SCORECARD</div>
-  <div class="g4">
-    <div class="panel"><div class="ptitle">BEAT (予想あり)</div><div class="kval up" id="k-beat">—</div><div class="klbl">実際値が予想を上回った件数</div><span class="badge bg-g" id="k-beat-b">—</span></div>
-    <div class="panel"><div class="ptitle">MISS (予想あり)</div><div class="kval dn" id="k-miss">—</div><div class="klbl">実際値が予想を下回った件数</div><span class="badge bg-r" id="k-miss-b">—</span></div>
-    <div class="panel"><div class="ptitle">自動代替 (予想なし)</div><div class="kval neu" id="k-nof">—</div><div class="klbl">予想未入力 → 実績=予想で処理</div><span class="badge bg-m">actual_as_forecast</span></div>
-    <div class="panel"><div class="ptitle">方向一致率</div><div class="kval" id="k-acc">—</div><div class="klbl">前回比方向を正しく予想した率</div><span class="badge bg-b" id="k-acc-n">—</span></div>
-  </div>
-
-  <!-- Indicator Cards -->
-  <div class="sec">LATEST READINGS &amp; 予想入力</div>
-  <div class="ig" id="indGrid"><div class="empty"><span class="spin"></span><br><br>Loading...</div></div>
-
-  <!-- Charts -->
-  <div class="sec">MARKET CORRELATION</div>
+  <!-- ═══ CHARTS ═══ -->
+  <div class="sec">MARKET CHARTS</div>
   <div class="g2">
-    <div class="panel"><div class="ptitle">S&amp;P 500 &amp; NASDAQ 推移</div><div class="cwl" id="chPrices"></div></div>
     <div class="panel">
-      <div class="ptitle">指標別トレンド（閾値ライン付き）</div>
+      <div class="ptitle">S&P 500 &amp; NASDAQ 推移</div>
+      <div class="cwl" id="chPrices"></div>
+    </div>
+    <div class="panel">
+      <div class="ptitle">指標別トレンド</div>
       <select class="fsel" id="trendSel" onchange="renderTrendChart()" style="margin-bottom:10px"></select>
       <div class="cw" id="chTrend"></div>
     </div>
   </div>
-  <div class="g2" style="margin-bottom:18px">
-    <div class="panel"><div class="ptitle">YIELD CURVE 10Y−2Y</div><div class="cw" id="chYC"></div></div>
-    <div class="panel"><div class="ptitle">SURPRISE HISTORY (予想入力ありのみ)</div><div class="cw" id="chSurp"></div></div>
-  </div>
-
-  <!-- Forecast Tracking -->
-  <div class="sec">予想トラッキング</div>
-  <div class="panel" style="margin-bottom:18px">
-    <div class="tr-sum">
-      <div class="tr-k"><span class="tr-kv" id="tr-n">—</span><span class="tr-kl">予想入力件数</span></div>
-      <div class="tr-k"><span class="tr-kv up" id="tr-dir">—</span><span class="tr-kl">方向一致率</span></div>
-      <div class="tr-k"><span class="tr-kv" id="tr-mae">—</span><span class="tr-kl">平均絶対乖離</span></div>
-      <div class="tr-k"><span class="tr-kv neu" id="tr-nof">—</span><span class="tr-kl">自動代替件数</span></div>
+  <div class="g2">
+    <div class="panel">
+      <div class="ptitle">YIELD CURVE 10Y−2Y</div>
+      <div class="cw" id="chYC"></div>
     </div>
-    <div class="tw">
-      <table>
-        <thead><tr><th>日付</th><th>指標名</th><th>実際値</th><th>自分の予想</th><th>乖離</th><th>方向一致</th><th>種別</th><th>翌日S&amp;P変化</th></tr></thead>
-        <tbody id="trackBody"><tr><td colspan="8" class="empty"><span class="spin"></span></td></tr></tbody>
-      </table>
+    <div class="panel">
+      <div class="ptitle">FF金利推移 &amp; 1年後期待</div>
+      <div class="cw" id="chFF"></div>
     </div>
   </div>
 
-  <!-- Data Table -->
+  <!-- ═══ DATA TABLE ═══ -->
   <div class="sec">DATA TABLE</div>
   <div class="panel">
-    <div class="filters">
+    <div class="tbl-filters">
       <select class="fsel" id="fInd" onchange="renderTable()"><option value="">ALL INDICATORS</option></select>
-      <input  class="finp" type="date" id="fDate" onchange="renderTable()">
+      <input class="finp" type="date" id="fDate" onchange="renderTable()">
       <select class="fsel" id="fSrc" onchange="renderTable()">
-        <option value="">ALL FORECAST SOURCES</option>
-        <option value="user">USER (事前入力)</option>
-        <option value="user_retroactive">USER RETROACTIVE (事後入力)</option>
-        <option value="actual_as_forecast">ACTUAL AS FORECAST (自動代替)</option>
-        <option value="none">NONE</option>
+        <option value="">ALL SOURCES</option>
+        <option value="manual">手入力コンセンサス</option>
+        <option value="actual_as_forecast">自動代替</option>
+      </select>
+      <select class="fsel" id="fRegime" onchange="renderTable()">
+        <option value="">ALL REGIMES</option>
+        <option value="EASING">EASING</option>
+        <option value="TIGHTENING">TIGHTENING</option>
+        <option value="BALANCED">BALANCED</option>
       </select>
     </div>
-    <div class="tw">
+    <div class="twrap">
       <table>
-        <thead><tr><th>Date</th><th>Indicator</th><th>Actual</th><th>Forecast</th><th>Surprise</th><th>Src</th><th>YoY%</th><th>S&amp;P500</th><th>YC</th><th>Market Reaction</th></tr></thead>
-        <tbody id="tblBody"><tr><td colspan="10" class="empty"><span class="spin"></span></td></tr></tbody>
+        <thead>
+          <tr>
+            <th>Date</th><th>Indicator</th><th>Actual</th>
+            <th>Consensus</th><th>Surprise</th><th>Source</th>
+            <th>Regime</th><th>Dominant</th><th>Impact</th>
+            <th>翌日S&P</th><th>YoY%</th>
+          </tr>
+        </thead>
+        <tbody id="tblBody"><tr><td colspan="11" class="empty"><span class="spin"></span></td></tr></tbody>
       </table>
     </div>
   </div>
@@ -258,709 +792,659 @@
 </div><!-- /shell -->
 
 <script>
-'use strict';
-// ═══════════════════════════════════════════════════════
-// CONFIG & STATE
-// ═══════════════════════════════════════════════════════
-const LS_KEY = 'macropulse_forecasts_v4';
-const CSV_PATHS = ['data/05_economic_history.csv'];
+// ═══════════════════════════════════════════════════════════
+// MOCK DATA (モックデータ)
+// ═══════════════════════════════════════════════════════════
+function genMockData() {
+  const fedContext = [
+    {
+      month: '2026-03',
+      regime: 'EASING',
+      dominant: 'EMPLOYMENT_FOCUS',
+      dominant_label: '雇用重視',
+      ff_current: 4.375,
+      zq_price: 96.125,
+      zq_rate: 3.875,
+      cuts_implied: 2.0,
+      fomc_date: '2026-01-29',
+      ai_reason: 'FOMC声明では「labor market conditions have softened」との文言が追加。インフレはやや鈍化し2%目標に向かう動きを確認。FRBの主眼は雇用維持に移行。'
+    },
+    {
+      month: '2026-02',
+      regime: 'EASING',
+      dominant: 'BALANCED',
+      dominant_label: '両睨み',
+      ff_current: 4.375,
+      zq_price: 95.850,
+      zq_rate: 4.150,
+      cuts_implied: 0.9,
+      fomc_date: '2026-01-29',
+      ai_reason: '声明ではインフレと雇用のバランスを強調。利下げペースは「データ次第」と繰り返し。明確な優先順位付けなし。'
+    },
+    {
+      month: '2026-01',
+      regime: 'EASING',
+      dominant: 'INFLATION_FOCUS',
+      dominant_label: 'インフレ警戒',
+      ff_current: 4.625,
+      zq_price: 95.500,
+      zq_rate: 4.500,
+      cuts_implied: 0.5,
+      fomc_date: '2025-12-18',
+      ai_reason: '12月FOMC声明でインフレが依然として「somewhat elevated」と言及。利下げ見通しを下方修正。インフレ警戒が支配的。'
+    }
+  ];
 
-const THRESHOLD = {
-  'ISM Manufacturing PMI':       { bull:50,     bear:50,     unit:'index'  },
-  'Initial Jobless Claims':      { bull:250000, bear:300000, unit:'件'     },
-  'Michigan Consumer Sentiment': { bull:80,     bear:65,     unit:'index'  },
-  'Average Hourly Earnings YoY': { bull:null,   bear:null,   unit:'%YoY'   },
-  'Durable Goods Orders':        { bull:null,   bear:null,   unit:'%MoM'   },
-  'New Residential Starts':      { bull:1400,   bear:1200,   unit:'千件'   },
+  const indicators = [
+    // 2026-03
+    { date:'2026-03-10', name:'No Indicators',              actual:null,     consensus:null,    prev:null,      src:'none',   sp_next:null },
+    // 2026-03 upcoming
+    { date:'2026-03-13', name:'Initial Jobless Claims',     actual:null,     consensus:225000,  prev:221000,    src:'manual', sp_next:null, upcoming:true },
+    { date:'2026-03-21', name:'Michigan Consumer Sentiment',actual:null,     consensus:64.5,    prev:64.7,      src:'manual', sp_next:null, upcoming:true },
+    // 2026-02
+    { date:'2026-02-28', name:'Durable Goods Orders',       actual:-1.1,     consensus:-0.5,    prev:0.8,       src:'manual', sp_next:-0.31 },
+    { date:'2026-02-21', name:'Michigan Consumer Sentiment',actual:64.7,     consensus:67.0,    prev:71.1,      src:'manual', sp_next:-0.58 },
+    { date:'2026-02-20', name:'Initial Jobless Claims',     actual:219000,   consensus:222000,  prev:213000,    src:'manual', sp_next:0.43 },
+    { date:'2026-02-18', name:'New Residential Starts',     actual:1380,     consensus:1420,    prev:1350,      src:'manual', sp_next:-0.22 },
+    // 2026-01
+    { date:'2026-01-30', name:'Average Hourly Earnings YoY',actual:3.8,      consensus:3.9,     prev:4.0,       src:'manual', sp_next:0.67 },
+    { date:'2026-01-23', name:'Initial Jobless Claims',     actual:213000,   consensus:220000,  prev:218000,    src:'manual', sp_next:0.82 },
+    { date:'2026-01-16', name:'Michigan Consumer Sentiment',actual:71.1,     consensus:73.0,    prev:74.0,      src:'actual_as_forecast', sp_next:0.12 },
+    { date:'2026-01-07', name:'ISM Manufacturing PMI',      actual:49.3,     consensus:49.8,    prev:48.4,      src:'manual', sp_next:-0.18 },
+  ];
+
+  const market = [
+    { date:'2026-03-10', sp:6781.48, nq:24956.47, yc:0.58, ff:4.375, zq:96.125 },
+    { date:'2026-02-28', sp:6850.20, nq:25100.30, yc:0.55, ff:4.375, zq:95.850 },
+    { date:'2026-02-21', sp:6880.10, nq:25300.50, yc:0.52, ff:4.375, zq:95.850 },
+    { date:'2026-02-14', sp:6920.40, nq:25500.20, yc:0.50, ff:4.375, zq:95.850 },
+    { date:'2026-01-31', sp:6795.99, nq:24800.10, yc:0.48, ff:4.375, zq:95.500 },
+    { date:'2026-01-24', sp:6750.20, nq:24600.30, yc:0.45, ff:4.625, zq:95.500 },
+    { date:'2026-01-17', sp:6700.50, nq:24400.20, yc:0.42, ff:4.625, zq:95.500 },
+    { date:'2026-01-10', sp:6680.30, nq:24200.50, yc:0.40, ff:4.625, zq:95.500 },
+    { date:'2026-01-03', sp:6600.10, nq:23900.40, yc:0.38, ff:4.625, zq:95.500 },
+  ];
+
+  return { fedContext, indicators, market };
+}
+
+// ═══════════════════════════════════════════════════════════
+// IMPACT LOGIC — レジーム×Dominant×指標でimpactを判定
+// ═══════════════════════════════════════════════════════════
+const INDICATOR_META = {
+  'ISM Manufacturing PMI': {
+    beat_direction: 'UP', // actualがconsensusより上 = beat
+    easing_employment: { beat: 'POSITIVE', miss: 'MIXED',
+      beat_reason: '製造業回復は景気改善シグナル。EMPLOYMENT_FOCUS局面では雇用回復期待で株にポジティブ。',
+      miss_reason: '製造業軟化は雇用不安を喚起。EMPLOYMENT_FOCUS局面では利下げ期待も高まりMIXED。' },
+    easing_inflation: { beat: 'NEGATIVE', miss: 'POSITIVE',
+      beat_reason: '製造業過熱はインフレ再燃懸念。INFLATION_FOCUS局面ではFedの引き締め長期化リスクで株にネガティブ。',
+      miss_reason: '製造業軟化はインフレ圧力低下。INFLATION_FOCUS局面ではFed利下げ余地拡大で株にポジティブ。' },
+    balanced: { beat: 'MIXED', miss: 'MIXED',
+      beat_reason: '製造業回復。景気・インフレ両面の影響が交錯しMIXED。',
+      miss_reason: '製造業軟化。景気懸念と利下げ期待が拮抗しMIXED。' },
+  },
+  'Initial Jobless Claims': {
+    beat_direction: 'DOWN', // actualが低い方がbeat（雇用良好）
+    easing_employment: { beat: 'MIXED', miss: 'POSITIVE',
+      beat_reason: '雇用堅調はFed利下げペース鈍化リスク。EMPLOYMENT_FOCUS局面では景気好調面はポジティブだが金利据え置き懸念でMIXED。',
+      miss_reason: '雇用悪化はFed利下げ圧力↑。EMPLOYMENT_FOCUS局面では政策支援への期待から株にポジティブ。' },
+    easing_inflation: { beat: 'POSITIVE', miss: 'NEGATIVE',
+      beat_reason: '雇用堅調は景気の強さを示す。INFLATION_FOCUS局面では経済の底堅さが株にポジティブ。',
+      miss_reason: '雇用悪化は景気減速懸念。INFLATION_FOCUS局面ではスタグフレーションリスクで株にネガティブ。' },
+    balanced: { beat: 'MIXED', miss: 'MIXED',
+      beat_reason: '雇用堅調。景気好調と利下げ減速の綱引きでMIXED。',
+      miss_reason: '雇用悪化。景気懸念と利下げ期待が拮抗しMIXED。' },
+  },
+  'Michigan Consumer Sentiment': {
+    beat_direction: 'UP',
+    easing_employment: { beat: 'POSITIVE', miss: 'MIXED',
+      beat_reason: '消費者マインド改善は個人消費拡大→企業業績回復期待。EMPLOYMENT_FOCUS局面では雇用安定の証左として株にポジティブ。',
+      miss_reason: '消費者マインド悪化は雇用・景気不安の反映。利下げ期待と景気懸念が交錯しMIXED。' },
+    easing_inflation: { beat: 'NEGATIVE', miss: 'POSITIVE',
+      beat_reason: '消費過熱はインフレ再加速懸念。INFLATION_FOCUS局面ではFed引き締め継続リスクで株にネガティブ。',
+      miss_reason: '消費冷却はインフレ鎮静化シグナル。INFLATION_FOCUS局面ではFed利下げ余地拡大で株にポジティブ。' },
+    balanced: { beat: 'MIXED', miss: 'MIXED',
+      beat_reason: '消費者心理改善。景気ポジティブだがインフレ懸念も。',
+      miss_reason: '消費者心理悪化。景気懸念と利下げ期待が拮抗。' },
+  },
+  'New Residential Starts': {
+    beat_direction: 'UP',
+    easing_employment: { beat: 'POSITIVE', miss: 'NEGATIVE',
+      beat_reason: '住宅着工増加は建設雇用↑・関連消費↑。EMPLOYMENT_FOCUS局面では雇用回復の先行指標として株にポジティブ。',
+      miss_reason: '住宅着工減少は建設雇用・消費に悪影響。EMPLOYMENT_FOCUS局面では景気減速懸念で株にネガティブ。' },
+    easing_inflation: { beat: 'NEGATIVE', miss: 'POSITIVE',
+      beat_reason: '住宅需要過熱は家賃・住宅インフレ継続懸念。INFLATION_FOCUS局面ではFed引き締め長期化リスクで株にネガティブ。',
+      miss_reason: '住宅着工低迷は住宅インフレ鎮静化の兆し。INFLATION_FOCUS局面ではFed利下げ余地でポジティブ。' },
+    balanced: { beat: 'MIXED', miss: 'MIXED',
+      beat_reason: '住宅回復。景気改善とインフレ影響が交錯。',
+      miss_reason: '住宅軟化。景気懸念と利下げ期待が拮抗。' },
+  },
+  'Average Hourly Earnings YoY': {
+    beat_direction: 'DOWN', // 低い方がインフレ的に良い（INFLATION_FOCUS時）
+    easing_employment: { beat: 'NEGATIVE', miss: 'POSITIVE',
+      beat_reason: '賃金上昇鈍化は労働市場の緩みを示す。EMPLOYMENT_FOCUS局面では雇用悪化の前兆として株にネガティブ。',
+      miss_reason: '賃金上昇加速は雇用市場の強さの証左。EMPLOYMENT_FOCUS局面では個人消費↑期待で株にポジティブ。' },
+    easing_inflation: { beat: 'POSITIVE', miss: 'NEGATIVE',
+      beat_reason: '賃金上昇鈍化はコスト・インフレ圧力低下。INFLATION_FOCUS局面ではFed利下げ余地拡大で株にポジティブ。',
+      miss_reason: '賃金上昇加速はインフレ再燃懸念。INFLATION_FOCUS局面ではFed引き締め長期化リスクで株にネガティブ。' },
+    balanced: { beat: 'MIXED', miss: 'MIXED',
+      beat_reason: '賃金伸び鈍化。インフレ鎮静化と雇用懸念が交錯。',
+      miss_reason: '賃金加速。消費好調とインフレ懸念が拮抗。' },
+  },
+  'Durable Goods Orders': {
+    beat_direction: 'UP',
+    easing_employment: { beat: 'POSITIVE', miss: 'NEGATIVE',
+      beat_reason: '耐久財受注増は製造業雇用・設備投資↑の先行指標。EMPLOYMENT_FOCUS局面では株にポジティブ。',
+      miss_reason: '耐久財軟化は製造業雇用・設備投資の先行き不安。EMPLOYMENT_FOCUS局面では株にネガティブ。' },
+    easing_inflation: { beat: 'MIXED', miss: 'POSITIVE',
+      beat_reason: '耐久財需要強は景気過熱→インフレ懸念。INFLATION_FOCUS局面ではMIXED。',
+      miss_reason: '耐久財軟化は需要鈍化→インフレ圧力低下。INFLATION_FOCUS局面ではFed利下げ余地でポジティブ。' },
+    balanced: { beat: 'MIXED', miss: 'MIXED',
+      beat_reason: '耐久財回復。設備投資期待とインフレ懸念が交錯。',
+      miss_reason: '耐久財軟化。景気懸念と利下げ期待が拮抗。' },
+  },
 };
 
-let DATA = [];           // applyForecasts 後のアクティブデータ
-let RAW  = [];           // CSV から読んだ生データ
+function getImpact(indName, actual, consensus, dominant, beat_direction) {
+  const meta = INDICATOR_META[indName];
+  if (!meta || actual === null || consensus === null) return { impact: 'NEUTRAL', reason: 'データ不足のため判定不可。' };
+
+  const isBeat = beat_direction === 'UP'
+    ? actual > consensus
+    : actual < consensus;
+
+  let key;
+  if (dominant === 'EMPLOYMENT_FOCUS') key = 'easing_employment';
+  else if (dominant === 'INFLATION_FOCUS') key = 'easing_inflation';
+  else key = 'balanced';
+
+  const rule = meta[key];
+  if (!rule) return { impact: 'NEUTRAL', reason: '判定ルール未定義。' };
+
+  return {
+    impact: isBeat ? rule.beat : rule.miss,
+    reason: isBeat ? rule.beat_reason : rule.miss_reason,
+    is_beat: isBeat,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let MOCK = genMockData();
+let INDICATORS = MOCK.indicators;
+let FED_CTX = MOCK.fedContext;
+let MARKET = MOCK.market;
 let CHARTS = {};
-let pendingRecalc = 0;
+const LS_KEY = 'macropulse_v5_consensus';
 
-// ═══════════════════════════════════════════════════════
+// localStorage for manual consensus
+function allConsensus() { try { return JSON.parse(localStorage.getItem(LS_KEY)||'{}'); } catch { return {}; } }
+function getConsensus(name, date) { return allConsensus()[`${name}_${date}`]; }
+function saveConsensus(name, date, val) {
+  const all = allConsensus();
+  all[`${name}_${date}`] = { value: val, saved_at: new Date().toISOString() };
+  localStorage.setItem(LS_KEY, JSON.stringify(all));
+}
+
+// ═══════════════════════════════════════════════════════════
+// CSV LOADER
+// ═══════════════════════════════════════════════════════════
+async function loadCSVData() {
+  // 実CSV読み込み（GitHub Pages上で動作）
+  for (const path of ['data/05_economic_history.csv','data/05_fed_context.csv']) {
+    try {
+      const res = await fetch(path);
+      if (!res.ok) continue;
+      // TODO: CSVパース & MOCK差し替え
+    } catch {}
+  }
+  showNotice('DEMOデータ表示中。実CSVは data/ フォルダから読み込みます。', 'warn');
+  render();
+}
+
+function loadDemoData() {
+  MOCK = genMockData();
+  INDICATORS = MOCK.indicators;
+  FED_CTX = MOCK.fedContext;
+  MARKET = MOCK.market;
+  showNotice('MOCKデータを読み込みました。', 'ok');
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════
 // UTILS
-// ═══════════════════════════════════════════════════════
-const el  = id => document.getElementById(id);
-const n   = v  => { const x = parseFloat(v); return isNaN(x) ? null : x; };
-const r4  = v  => Math.round(v * 10000) / 10000;
-
-function fmtN(v, d = 2) {
-  const x = typeof v === 'number' ? v : parseFloat(v);
+// ═══════════════════════════════════════════════════════════
+const el = id => document.getElementById(id);
+const n  = v => { const x = parseFloat(v); return isNaN(x) ? null : x; };
+function fmtN(v, d=2) {
+  if (v===null||v===undefined) return '—';
+  const x = typeof v==='number' ? v : parseFloat(v);
   if (isNaN(x)) return '—';
-  return x.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+  return x.toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d});
 }
 function fmtK(v) {
   const x = parseFloat(v);
   if (isNaN(x)) return '—';
-  if (Math.abs(x) >= 100000) return (x / 1000).toFixed(1) + 'K';
-  if (Math.abs(x) >= 1000)   return x.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  if (Math.abs(x) >= 10000) return (x/1000).toFixed(1)+'K';
   return fmtN(x);
 }
-
-function srcTag(src) {
+function impactBadge(impact) {
   const map = {
-    'user':               ['事前入力',  's-usr'],
-    'user_retroactive':   ['事後入力',  's-ret'],
-    'actual_as_forecast': ['自動代替',  's-aaf'],
-    'stored':             ['保存済',    's-usr'],
-    'FRED':               ['FRED',      's-usr'],
-    'none':               ['未入力',    's-non'],
+    POSITIVE: ['impact-pos', 'POSITIVE'],
+    NEGATIVE: ['impact-neg', 'NEGATIVE'],
+    MIXED:    ['impact-mixed', 'MIXED'],
+    NEUTRAL:  ['impact-neutral', 'NEUTRAL'],
   };
-  const [label, cls] = map[src] || ['—', 's-non'];
-  return `<span class="stag ${cls}">${label}</span>`;
+  const [cls, label] = map[impact] || ['impact-neutral', impact];
+  return `<span class="impact-badge ${cls}">${label}</span>`;
+}
+function statusBadge(src) {
+  if (src === 'manual') return `<span class="status-badge sb-ok">手入力済</span>`;
+  if (src === 'actual_as_forecast') return `<span class="status-badge sb-auto">自動代替</span>`;
+  return `<span class="status-badge sb-empty">未入力</span>`;
+}
+function getFedCtx(dateStr) {
+  const month = dateStr.slice(0,7);
+  return FED_CTX.find(f => f.month === month) || FED_CTX[0];
+}
+function daysUntil(dateStr) {
+  const d = new Date(dateStr);
+  const now = new Date();
+  now.setHours(0,0,0,0);
+  const diff = Math.round((d - now) / 86400000);
+  if (diff < 0) return null;
+  if (diff === 0) return '本日';
+  return `${diff}日後`;
 }
 
-// ═══════════════════════════════════════════════════════
-// localStorage 予想管理
-// ═══════════════════════════════════════════════════════
-function allFC()           { try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch { return {}; } }
-function getFC(ind, dt)    { return allFC()[`${ind}_${dt}`]; }
-function setFC(ind, dt, v, retro) {
-  const all = allFC();
-  all[`${ind}_${dt}`] = { forecast: v, savedAt: new Date().toISOString(), retroactive: retro };
-  localStorage.setItem(LS_KEY, JSON.stringify(all));
-}
-
-// ═══════════════════════════════════════════════════════
-// 予想適用 & フォールバック（ブラウザ完結）
-// ═══════════════════════════════════════════════════════
-/**
- * 各行に対し:
- *  - 実際値なし         → 入力欄のみ表示（発表前）
- *  - localStorage に予想あり → Surprise 再計算, src = user / user_retroactive
- *  - localStorage に予想なし && CSV に期待値なし → actual_as_forecast (Surprise=0)
- *  - CSV に既存の期待値あり  → そのまま使用
- */
-function applyForecasts(rows) {
-  const fc = allFC();
-  return rows.map(r => {
-    const clone  = { ...r };
-    const actual = n(r['実際値']);
-
-    if (actual === null) return clone;   // 発表前
-
-    const key   = `${r['指標名']}_${r['リリース日']}`;
-    const saved = fc[key];
-
-    if (saved && saved.forecast !== undefined && String(saved.forecast).trim() !== '') {
-      const fv = parseFloat(saved.forecast);
-      if (!isNaN(fv)) {
-        clone['期待値(Consensus)']   = fv;
-        clone['Surprise(実際-期待)'] = r4(actual - fv);
-        clone['forecast_source']     = saved.retroactive ? 'user_retroactive' : 'user';
-        return clone;
-      }
-    }
-
-    // CSV に既存の期待値がある場合はそれを維持
-    const csvFV  = n(r['期待値(Consensus)']);
-    const csvSrc = String(r['forecast_source'] || '').trim();
-    if (csvFV !== null && csvSrc && csvSrc !== 'none' && csvSrc !== 'actual_as_forecast') {
-      return clone;  // CSV の値をそのまま使用
-    }
-
-    // フォールバック: 実績=予想 (Surprise=0, グレー表示)
-    clone['期待値(Consensus)']   = actual;
-    clone['Surprise(実際-期待)'] = 0;
-    clone['forecast_source']     = 'actual_as_forecast';
-    return clone;
-  });
-}
-
-// ═══════════════════════════════════════════════════════
-// 再計算（ブラウザ完結）
-// ═══════════════════════════════════════════════════════
-function runRecalc() {
-  DATA = applyForecasts(RAW);
-  pendingRecalc = 0;
-  el('rbanner').classList.remove('on');
-  render();
-  showNotice('再計算完了。すべての Surprise を更新しました。', 'ok');
-}
-
-// ═══════════════════════════════════════════════════════
-// 予想保存
-// ═══════════════════════════════════════════════════════
-function saveFC(ind, dt) {
-  const inputId = `fci-${ind.replace(/[\s()%]/g, '_')}`;
-  const input   = el(inputId);
-  if (!input) return;
-  const val = parseFloat(input.value);
-  if (isNaN(val)) { showNotice('有効な数値を入力してください。', 'warn'); return; }
-
-  // 発表後の入力か判定
-  const csvRow = RAW.find(r => r['指標名'] === ind && r['リリース日'] === dt);
-  const retro  = !!(csvRow && n(csvRow['実際値']) !== null);
-  setFC(ind, dt, val, retro);
-
-  if (retro) {
-    pendingRecalc++;
-    el('rcount').textContent = pendingRecalc;
-    el('rbanner').classList.add('on');
-  }
-
-  // 即時 UI 更新（再計算バナーを押さなくても保存直後に反映）
-  DATA = applyForecasts(RAW);
-  renderCards();
-  updateKPIs();
-  renderTracking();
-  renderSurpChart();
-  showNotice(`「${ind}」の予想 ${val} を保存しました。${retro ? '（事後入力 — 再計算バナーで一括更新可）' : ''}`, 'ok');
-}
-
-// ═══════════════════════════════════════════════════════
-// CSV 読み込み
-// ═══════════════════════════════════════════════════════
-function parseCSV(text) {
-  const lines = text.trim().split('\n');
-  if (lines.length < 2) return [];
-  const hdrs = lines[0].split(',').map(h => h.trim());
-  return lines.slice(1).map((line, idx) => {
-    const vals = []; let cur = '', inQ = false;
-    for (let i = 0; i < line.length; i++) {
-      if (line[i] === '"') { inQ = !inQ; continue; }
-      if (line[i] === ',' && !inQ) { vals.push(cur.trim()); cur = ''; }
-      else cur += line[i];
-    }
-    vals.push(cur.trim());
-    const row = {};
-    hdrs.forEach((h, i) => row[h] = vals[i] !== undefined ? vals[i] : '');
-    row._id = idx;
-    return row;
-  }).filter(r => r['指標名']);
-}
-
-async function loadCSVData() {
-  for (const path of CSV_PATHS) {
-    try {
-      const res = await fetch(path + '?t=' + Date.now());
-      if (!res.ok) continue;
-      const text = await res.text();
-      const parsed = parseCSV(text);
-      if (!parsed.length) continue;
-      RAW  = parsed;
-      DATA = applyForecasts(parsed);
-      showNotice(`${DATA.length} 件ロード (${path})`, 'ok');
-      render();
-      return;
-    } catch {}
-  }
-  showNotice('CSVが見つかりません。DEMOボタンで動作確認できます。', 'warn');
-  renderEmpty();
-}
-
-// ═══════════════════════════════════════════════════════
-// Demo データ生成
-// ═══════════════════════════════════════════════════════
-function loadDemoData() {
-  RAW  = genDemo();
-  DATA = applyForecasts(RAW);
-  showNotice('DEMOデータ表示中。実データは data/05_economic_history.csv から自動ロードされます。', 'warn');
-  render();
-}
-
-function genDemo() {
-  const rows = [], base = new Date('2025-10-01');
-  const sp  = [5700,5720,5680,5750,5800,5770,5820,5790,5850,5900,5870,5920,5950,5930,5960];
-  const nq  = [19500,19600,19480,19700,19800,19750,19850,19820,19900,20000,19980,20100,20200,20150,20250];
-  const yc  = [0.38,0.40,0.42,0.45,0.43,0.46,0.48,0.50,0.52,0.49,0.51,0.53,0.55,0.58,0.56];
-  const inds = [
-    { name:'ISM Manufacturing PMI',       vals:[48.3,48.7,49.1,49.8,50.2], prevs:[47.8,48.3,48.7,49.1,49.8], period:28 },
-    { name:'Initial Jobless Claims',       vals:[221000,218000,225000,213000,220000], prevs:[225000,221000,218000,225000,213000], period:7 },
-    { name:'Michigan Consumer Sentiment',  vals:[72.4,73.0,70.5,74.2,75.1], prevs:[71.1,72.4,73.0,70.5,74.2], period:28 },
-    { name:'New Residential Starts',       vals:[1360,1420,1380,1450,1480], prevs:[1320,1360,1420,1380,1450], period:28 },
-    { name:'Durable Goods Orders',         vals:[-0.8,1.2,-0.3,0.9,2.1], prevs:[1.1,-0.8,1.2,-0.3,0.9], period:28 },
-  ];
-  inds.forEach(ind => {
-    ind.vals.forEach((v, i) => {
-      const d = new Date(base);
-      d.setDate(d.getDate() + i * ind.period + (ind.name.includes('Claims') ? i * 2 : 0));
-      const di   = Math.min(Math.floor(i * sp.length / ind.vals.length), sp.length - 1);
-      // 奇数インデックス = user予想あり
-      const hasU = i % 2 === 1;
-      const prev = ind.prevs[i];
-      let fv = v, surp = 0, src = 'actual_as_forecast';
-      if (hasU) {
-        const noise = (Math.random() - 0.45) * (ind.name.includes('Claims') ? 4000 : 1.2);
-        fv   = parseFloat((v + noise).toFixed(ind.name.includes('Claims') ? 0 : 1));
-        surp = r4(v - fv);
-        src  = 'user';
-      }
-      rows.push({
-        '指標名': ind.name, 'リリース日': d.toISOString().slice(0, 10),
-        '実際値': v, '期待値(Consensus)': fv, '前回値': prev,
-        'Surprise(実際-期待)': surp, 'forecast_source': src,
-        'YoY変化(%)': ((Math.random() - 0.3) * 5).toFixed(2),
-        'S&P500': sp[di], 'Nasdaq': nq[di], '10Y-2Y(YieldCurve)': yc[di],
-        '付随データ': '{}',
-        '市場反応(自動生成)': src === 'actual_as_forecast'
-          ? 'No forecast (actual used)'
-          : surp > 0 ? `Positive surprise (+${surp})` : `Negative surprise (${surp})`,
-        'データソース': 'FRED/Demo',
-        '更新日時': d.toISOString().slice(0, 10) + ' 07:00:00',
-      });
-    });
-  });
-  // No Indicators
-  for (let i = 0; i < 10; i++) {
-    const d = new Date(base); d.setDate(d.getDate() + i * 5 + 1);
-    const di = Math.min(i, sp.length - 1);
-    rows.push({ '指標名': 'No Indicators', 'リリース日': d.toISOString().slice(0, 10),
-      'S&P500': sp[di], 'Nasdaq': nq[di], '10Y-2Y(YieldCurve)': yc[di],
-      '付随データ': '{}', 'forecast_source': 'none' });
-  }
-  // Yield Curve
-  for (let i = 0; i < 15; i++) {
-    const d = new Date(base); d.setDate(d.getDate() + i * 3);
-    const di = Math.min(i, yc.length - 1);
-    rows.push({ '指標名': 'Yield Curve 10Y-2Y', 'リリース日': d.toISOString().slice(0, 10),
-      '実際値': yc[di], 'S&P500': sp[di], 'Nasdaq': nq[di], '10Y-2Y(YieldCurve)': yc[di],
-      '付随データ': '{}', 'forecast_source': 'none', 'データソース': 'FRED T10Y2Y' });
-  }
-  return rows.sort((a, b) => new Date(a['リリース日']) - new Date(b['リリース日']));
-}
-
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 // RENDER
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 function render() {
   updateTs();
+  updateRegimeBar();
   updateTicker();
-  updateKPIs();
-  renderCards();
+  renderConsensusGrid();
+  renderTimeline();
   renderPricesChart();
   renderYCChart();
-  renderSurpChart();
+  renderFFChart();
   renderTrendSel();
-  renderTracking();
   populateFilters();
   renderTable();
 }
 
-function renderEmpty() {
-  el('indGrid').innerHTML = '<div class="empty">データなし。DEMOボタンで動作確認できます。</div>';
-  el('tblBody').innerHTML = '<tr><td colspan="10" class="empty">No data</td></tr>';
+function updateTs() { el('ts').textContent = new Date().toLocaleString('ja-JP'); }
+
+// ─── Regime Bar ───
+function updateRegimeBar() {
+  const ctx = FED_CTX[0];
+  if (!ctx) return;
+  const bar = el('regimeBar');
+  bar.className = ctx.regime.toLowerCase();
+
+  el('rg-badge').textContent = ctx.regime;
+  el('rg-badge').className = `regime-badge ${ctx.regime.toLowerCase()}`;
+
+  el('rg-ff').textContent = ctx.ff_current.toFixed(3) + '%';
+  el('rg-ff').className = 'rpill-val';
+
+  el('rg-zq').textContent = ctx.zq_rate.toFixed(3) + '%';
+  const cutsVal = ((ctx.ff_current - ctx.zq_rate) / 0.25).toFixed(1);
+  const cutsSign = parseFloat(cutsVal) > 0 ? '▼' : '▲';
+  el('rg-cuts').textContent = `${cutsSign}${Math.abs(cutsVal)}回`;
+  el('rg-cuts').className = `rpill-val ${parseFloat(cutsVal)>0 ? 'pos' : 'neg'}`;
+  el('rg-dominant').textContent = ctx.dominant_label;
+  el('rg-dominant').className = 'rpill-val';
 }
 
-// ─── Timestamp ────────────────────────────────────────
-function updateTs() {
-  el('ts').textContent = new Date().toLocaleString('ja-JP');
-}
-
-// ─── Ticker ──────────────────────────────────────────
+// ─── Ticker ───
 function updateTicker() {
-  const mkt = [...DATA].filter(r => n(r['S&P500'])).sort((a, b) => new Date(b['リリース日']) - new Date(a['リリース日']));
+  const mkt = [...MARKET].sort((a,b) => new Date(b.date)-new Date(a.date));
   if (!mkt.length) return;
   const lat = mkt[0], prv = mkt[1];
-  const sp  = n(lat['S&P500']), sp0 = prv ? n(prv['S&P500']) : null;
-  const nq  = n(lat['Nasdaq']),  nq0 = prv ? n(prv['Nasdaq']) : null;
-  const yc  = n(lat['10Y-2Y(YieldCurve)']);
 
-  el('tk-sp').textContent = sp ? fmtN(sp) : '—';
-  el('tk-nq').textContent = nq ? fmtN(nq) : '—';
-  if (sp && sp0) {
-    const c = (sp - sp0) / sp0 * 100;
-    el('tk-sp-c').textContent  = (c >= 0 ? '▲' : '▼') + Math.abs(c).toFixed(2) + '%';
-    el('tk-sp-c').className    = 'ts2 ' + (c >= 0 ? 'up' : 'dn');
+  el('tk-sp').textContent = fmtN(lat.sp);
+  el('tk-nq').textContent = fmtN(lat.nq);
+  if (prv) {
+    const sc = ((lat.sp-prv.sp)/prv.sp*100);
+    el('tk-sp-c').textContent = (sc>=0?'▲':'▼')+Math.abs(sc).toFixed(2)+'%';
+    el('tk-sp-c').className = 'tick-sub '+(sc>=0?'up':'dn');
+    const nc = ((lat.nq-prv.nq)/prv.nq*100);
+    el('tk-nq-c').textContent = (nc>=0?'▲':'▼')+Math.abs(nc).toFixed(2)+'%';
+    el('tk-nq-c').className = 'tick-sub '+(nc>=0?'up':'dn');
   }
-  if (nq && nq0) {
-    const c = (nq - nq0) / nq0 * 100;
-    el('tk-nq-c').textContent  = (c >= 0 ? '▲' : '▼') + Math.abs(c).toFixed(2) + '%';
-    el('tk-nq-c').className    = 'ts2 ' + (c >= 0 ? 'up' : 'dn');
-  }
-  if (yc !== null) {
-    el('tk-yc').textContent  = (yc >= 0 ? '+' : '') + yc.toFixed(2) + '%';
-    el('tk-yc').className    = 'tv ' + (yc >= 0 ? 'up' : 'dn');
-    el('tk-yc-i').textContent = yc >= 0 ? 'NORMAL' : 'INVERTED';
-    el('tk-yc-i').className   = 'ts2 ' + (yc >= 0 ? 'up' : 'dn');
-  }
-  const indR = DATA.filter(r => !['No Indicators', 'Yield Curve 10Y-2Y'].includes(r['指標名']) && n(r['実際値']) !== null);
-  const usrR = indR.filter(r => (r['forecast_source'] || '').includes('user'));
-  const pct  = indR.length ? Math.round(usrR.length / indR.length * 100) : 0;
-  el('tk-fc').textContent = pct + '%';
-  el('tk-fc').className   = 'tv ' + (pct >= 50 ? 'up' : pct > 0 ? 'amb' : 'neu');
-  el('tk-last').textContent = lat['リリース日'] || '—';
-  el('tk-src').textContent  = (lat['データソース'] || '').toUpperCase();
+  el('tk-yc').textContent = (lat.yc>=0?'+':'')+lat.yc.toFixed(2)+'%';
+  el('tk-yc').className = 'tick-val '+(lat.yc>=0?'up':'dn');
+  el('tk-yc-s').textContent = lat.yc>=0 ? 'NORMAL' : 'INVERTED';
+  el('tk-yc-s').className = 'tick-sub '+(lat.yc>=0?'up':'dn');
+
+  const ctx = FED_CTX[0];
+  el('tk-zq').textContent = ctx ? ctx.zq_price.toFixed(3) : '—';
+  el('tk-last').textContent = lat.date;
+  el('tk-src').textContent = 'FRED/stooq';
 }
 
-// ─── KPIs ────────────────────────────────────────────
-function updateKPIs() {
-  const rows = DATA.filter(r =>
-    !['No Indicators', 'Yield Curve 10Y-2Y'].includes(r['指標名']) && n(r['実際値']) !== null);
-  let beat = 0, miss = 0, nof = 0, dHit = 0, dN = 0;
-  rows.forEach(r => {
-    const src = r['forecast_source'] || '';
-    if (src === 'actual_as_forecast') { nof++; return; }
-    const surp = n(r['Surprise(実際-期待)']);
-    if (surp === null) return;
-    if (surp > 0) beat++; else if (surp < 0) miss++;
-    const a = n(r['実際値']), p = n(r['前回値']), f = n(r['期待値(Consensus)']);
-    if (a !== null && p !== null && f !== null) {
-      if ((f > p) === (a > p)) dHit++;
-      dN++;
+// ─── Consensus Status Grid ───
+function renderConsensusGrid() {
+  // 指標ごとの最新発表を集計（upcomingも含む）
+  const indMap = {};
+  INDICATORS.forEach(r => {
+    if (!r.name || r.name === 'No Indicators') return;
+    if (!indMap[r.name] || new Date(r.date) > new Date(indMap[r.name].date)) {
+      indMap[r.name] = r;
     }
   });
-  const ut = beat + miss;
-  el('k-beat').textContent  = beat;
-  el('k-miss').textContent  = miss;
-  el('k-nof').textContent   = nof;
-  el('k-acc').textContent   = dN ? Math.round(dHit / dN * 100) + '%' : '—';
-  el('k-beat-b').textContent = ut ? Math.round(beat / ut * 100) + '% beat率' : '予想なし';
-  el('k-beat-b').className   = 'badge ' + (beat > miss ? 'bg-g' : 'bg-m');
-  el('k-miss-b').textContent = ut ? Math.round(miss / ut * 100) + '% miss率' : '—';
-  el('k-miss-b').className   = 'badge ' + (miss > 0 ? 'bg-r' : 'bg-m');
-  el('k-acc-n').textContent  = dN ? `n=${dN}` : 'データ不足';
-}
 
-// ─── Indicator Cards ─────────────────────────────────
-function renderCards() {
-  const latest = {};
-  DATA.forEach(r => {
-    const k = r['指標名'];
-    if (['No Indicators', 'Yield Curve 10Y-2Y'].includes(k)) return;
-    if (!latest[k] || new Date(r['リリース日']) > new Date(latest[k]['リリース日'])) latest[k] = r;
-  });
-  const names = Object.keys(latest);
-  if (!names.length) { el('indGrid').innerHTML = '<div class="empty">指標データなし</div>'; return; }
+  const names = Object.keys(indMap);
+  if (!names.length) { el('csGrid').innerHTML = '<div class="empty">データなし</div>'; return; }
 
-  el('indGrid').innerHTML = names.map(name => {
-    const r      = latest[name];
-    const actual = n(r['実際値']), prev = n(r['前回値']), fv = n(r['期待値(Consensus)']);
-    const surp   = n(r['Surprise(実際-期待)']);
-    const src    = r['forecast_source'] || 'none';
-    const thr    = THRESHOLD[name] || {};
-    const yoy    = n(r['YoY変化(%)']);
+  el('csGrid').innerHTML = names.map(name => {
+    const r = indMap[name];
+    const ctx = getFedCtx(r.date);
+    const meta = INDICATOR_META[name] || {};
 
-    // バッジ
-    let badge, bCls;
-    if (thr.bull !== null && thr.bull !== undefined && actual !== null && actual > thr.bull) {
-      badge = '▲ ABOVE'; bCls = 'bg-g';
-    } else if (thr.bear !== null && thr.bear !== undefined && actual !== null && actual < thr.bear) {
-      badge = '▼ BELOW'; bCls = 'bg-r';
-    } else if (actual !== null && prev !== null) {
-      badge = actual >= prev ? '▲ UP' : '▼ DOWN'; bCls = actual >= prev ? 'bg-g' : 'bg-r';
-    } else {
-      badge = 'NO DATA'; bCls = 'bg-m';
+    // consensus from localStorage or mock
+    const saved = getConsensus(name, r.date);
+    const consensusVal = saved ? saved.value : r.consensus;
+    const src = saved ? 'manual' : r.src;
+
+    const actual = r.actual;
+    let surprise = null, impactObj = null;
+    if (actual !== null && consensusVal !== null) {
+      surprise = actual - consensusVal;
+      impactObj = getImpact(name, actual, consensusVal, ctx.dominant, meta.beat_direction||'UP');
     }
 
-    // 実際値の色: actual_as_forecast = グレー, それ以外 = Surprise色
-    const ac = src === 'actual_as_forecast'
-      ? 'var(--mut)'
-      : (surp !== null && surp > 0 ? 'var(--grn)' : surp !== null && surp < 0 ? 'var(--red)' : 'var(--txt)');
+    const statusClass = src === 'manual' ? 'status-ok' : src === 'actual_as_forecast' ? 'status-auto' : 'status-empty';
+    const countdown = r.upcoming ? daysUntil(r.date) : null;
 
-    // 前回比バー
-    let barH = '';
-    if (actual !== null && prev !== null && prev !== 0) {
-      const pc = (actual - prev) / Math.abs(prev) * 100, w = Math.min(Math.abs(pc) * 5, 50);
-      barH = `<div class="ic-bar"><div class="ic-bar-f" style="width:${w}%;background:${pc >= 0 ? 'var(--grn)' : 'var(--red)'}"></div></div>`;
-    }
-
-    // Surprise 表示
-    let surpH;
-    if (src === 'actual_as_forecast') {
-      surpH = `<span class="surp surp-aaf">±0.00</span><span class="surp-meta">（予想なし — 自動代替）</span>`;
-    } else if (surp !== null) {
-      const sc = surp > 0 ? 'var(--grn)' : surp < 0 ? 'var(--red)' : 'var(--mut)';
-      surpH = `<span class="surp" style="color:${sc}">${surp > 0 ? '+' : ''}${surp.toFixed(3)}</span>
-               <span class="surp-meta">vs 予想 ${fv !== null ? fmtK(fv) : '—'}</span>`;
-    } else {
-      surpH = `<span class="surp surp-aaf">—</span>`;
-    }
-
-    // 入力欄の既存値
-    const savedFc  = getFC(name, r['リリース日']);
-    const inputVal = savedFc ? savedFc.forecast
-                   : (src === 'user' || src === 'user_retroactive' ? fv : '');
-    const inputCls = inputVal ? 'fc-inp filled' : 'fc-inp';
-    const inputId  = `fci-${name.replace(/[\s()%]/g, '_')}`;
-
-    return `<div class="ic fi">
-      <div class="ic-hdr">
-        <div class="ic-name">${name}</div>
-        <span class="badge ${bCls}">${badge}</span>
+    return `<div class="cs-card ${statusClass} fade-in">
+      <div class="cs-name">${name}</div>
+      <div class="cs-row">
+        <div class="cs-val">${actual !== null ? fmtK(actual) : '—'}</div>
+        ${impactObj ? impactBadge(impactObj.impact) : ''}
       </div>
-      <div class="ic-val" style="color:${ac}">${actual !== null ? fmtK(actual) : '—'}</div>
-      <div class="ic-meta">
-        <div class="icm"><span class="icm-l">前回値</span><span class="icm-v">${fmtK(prev)}</span></div>
-        <div class="icm"><span class="icm-l">YoY</span><span class="icm-v">${yoy !== null ? yoy.toFixed(1) + '%' : '—'}</span></div>
-        ${thr.bull !== null && thr.bull !== undefined ? `<div class="icm"><span class="icm-l">閾値(強気)</span><span class="icm-v">${fmtK(thr.bull)}</span></div>` : ''}
+      <div class="cs-meta">
+        <div class="cs-m"><span class="cs-ml">前回値</span><span class="cs-mv">${r.prev !== null ? fmtK(r.prev) : '—'}</span></div>
+        <div class="cs-m"><span class="cs-ml">コンセンサス</span><span class="cs-mv" style="color:var(--acc2)">${consensusVal !== null ? fmtK(consensusVal) : '—'}</span></div>
+        ${surprise !== null ? `<div class="cs-m"><span class="cs-ml">Surprise</span><span class="cs-mv" style="color:${surprise>0?'var(--pos)':surprise<0?'var(--neg)':'var(--neu)'}">${surprise>0?'+':''}${fmtN(surprise,3)}</span></div>` : ''}
       </div>
-      ${barH}
-      <div class="ic-date">${r['リリース日']} · ${(r['データソース'] || '').replace('FRED/Demo', 'DEMO')}</div>
-      <div class="fc-area">
-        <div class="fc-lbl">あなたの予想 ${srcTag(src)}</div>
-        <div class="fc-row">
-          <input class="${inputCls}" id="${inputId}" type="number" step="any"
-            placeholder="予想値を入力..."
-            value="${inputVal !== '' && inputVal !== null ? inputVal : ''}"
-            oninput="this.classList.toggle('filled', this.value !== '')">
-          <button class="btn-sv" onclick="saveFC('${name}','${r['リリース日']}')">保存</button>
+      <div class="cs-input-area">
+        <div class="cs-input-lbl">
+          コンセンサス入力 ${statusBadge(src)}
         </div>
-        <div class="fc-res">${surpH}</div>
+        <div class="cs-inp-row">
+          <input class="cs-inp ${consensusVal?'has-val':''}" type="number" step="any"
+            id="csi-${name.replace(/\s/g,'_')}"
+            placeholder="市場コンセンサスを入力..."
+            value="${consensusVal !== null ? consensusVal : ''}">
+          <button class="btn-save" onclick="onSaveConsensus('${name}','${r.date}')">保存</button>
+        </div>
+        ${impactObj && actual !== null ? `<div class="ai-note"><div class="ai-note-label">REGIME ANALYSIS · ${ctx.dominant_label}</div>${impactObj.reason}</div>` : ''}
+        <div class="cs-next">
+          ${r.upcoming ? `<span class="upcoming-label">UPCOMING</span>` : ''}
+          <span>${r.date}</span>
+          ${countdown ? `<span class="cs-countdown">${countdown}</span>` : ''}
+        </div>
       </div>
     </div>`;
   }).join('');
 }
 
-// ═══════════════════════════════════════════════════════
-// CHARTS
-// ═══════════════════════════════════════════════════════
-const axStyle = {
-  axisLabel:{ color:'#475569', fontFamily:'Space Mono', fontSize:9 },
-  axisLine:{ lineStyle:{ color:'#1e2840' } },
-  splitLine:{ lineStyle:{ color:'#1e2840' } },
-};
-const baseOpts = {
-  backgroundColor: 'transparent',
-  tooltip:{ trigger:'axis', backgroundColor:'#161c2d', borderColor:'#1e2840', textStyle:{ color:'#e2e8f0', fontFamily:'Space Mono', fontSize:11 } },
-  grid:{ left:'2%', right:'4%', bottom:'10%', top:'24px', containLabel:true },
-};
-
-function initChart(id) {
-  if (CHARTS[id]) CHARTS[id].dispose();
-  CHARTS[id] = echarts.init(el(id), null, { renderer:'canvas' });
-  window.addEventListener('resize', () => CHARTS[id] && CHARTS[id].resize());
-  return CHARTS[id];
+function onSaveConsensus(name, date) {
+  const inp = el('csi-'+name.replace(/\s/g,'_'));
+  if (!inp) return;
+  const val = parseFloat(inp.value);
+  if (isNaN(val)) { showNotice('有効な数値を入力してください。', 'warn'); return; }
+  saveConsensus(name, date, val);
+  showNotice(`「${name}」のコンセンサス ${val} を保存しました。`, 'ok');
+  renderConsensusGrid();
+  renderTimeline();
+  renderTable();
 }
 
+// ─── Narrative Timeline ───
+function renderTimeline() {
+  // 月ごとにグループ化
+  const byMonth = {};
+  INDICATORS.forEach(r => {
+    if (!r.name || r.name === 'No Indicators') return;
+    const m = r.date.slice(0,7);
+    if (!byMonth[m]) byMonth[m] = [];
+    byMonth[m].push(r);
+  });
+
+  const months = Object.keys(byMonth).sort((a,b) => b.localeCompare(a));
+  if (!months.length) { el('timeline').innerHTML = '<div class="empty">データなし</div>'; return; }
+
+  el('timeline').innerHTML = months.map((month, mi) => {
+    const ctx = FED_CTX.find(f => f.month === month) || FED_CTX[0];
+    const events = byMonth[month].sort((a,b) => new Date(b.date)-new Date(a.date));
+    const isOpen = mi === 0;
+
+    const eventsHtml = events.map(r => {
+      const saved = getConsensus(r.name, r.date);
+      const consensusVal = saved ? saved.value : r.consensus;
+      const meta = INDICATOR_META[r.name] || {};
+      const actual = r.actual;
+
+      let impactObj = null;
+      let surprise = null;
+      if (actual !== null && consensusVal !== null) {
+        surprise = actual - consensusVal;
+        impactObj = getImpact(r.name, actual, consensusVal, ctx.dominant, meta.beat_direction||'UP');
+      }
+
+      const spChg = r.sp_next;
+      const spClass = spChg === null ? 'neu' : spChg >= 0 ? 'up' : 'dn';
+      const spText = spChg !== null ? `S&P ${spChg>=0?'+':''}${spChg}%` : '翌日—';
+
+      if (r.upcoming) {
+        return `<div class="tl-event upcoming">
+          <div class="tl-event-date">
+            <span class="tl-date-val">${r.date}</span>
+            <span class="tick-sub neu">${daysUntil(r.date)||''}</span>
+          </div>
+          <div class="tl-event-body">
+            <div class="tl-event-header">
+              <span class="tl-ind-name">${r.name}</span>
+              <span class="upcoming-label">UPCOMING</span>
+            </div>
+            <div style="font-size:10px;color:var(--txt3)">
+              前回: <span style="font-family:var(--mono)">${fmtK(r.prev)}</span>
+              &nbsp;·&nbsp;
+              コンセンサス: <span style="font-family:var(--mono);color:var(--acc2)">${consensusVal !== null ? fmtK(consensusVal) : '未入力'}</span>
+            </div>
+          </div>
+        </div>`;
+      }
+
+      return `<div class="tl-event">
+        <div class="tl-event-date">
+          <span class="tl-date-val">${r.date}</span>
+          <span class="tl-sp-chg ${spClass}">${spText}</span>
+        </div>
+        <div class="tl-event-body">
+          <div class="tl-event-header">
+            <span class="tl-ind-name">${r.name}</span>
+            <span class="tl-actual">${fmtK(actual)}</span>
+            ${surprise !== null ? `<span class="tl-vs-consensus">vs ${fmtK(consensusVal)} (${surprise>0?'+':''}${fmtN(surprise,3)})</span>` : ''}
+            ${impactObj ? impactBadge(impactObj.impact) : ''}
+          </div>
+          ${impactObj ? `<div class="tl-narrative">${impactObj.reason}</div>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+
+    return `<div class="tl-month-block">
+      <div class="tl-month-hdr ${ctx.regime.toLowerCase()}" onclick="toggleMonth(this)">
+        <span class="tl-month-label">${month}</span>
+        <span class="tl-month-regime ${ctx.regime.toLowerCase()}">${ctx.regime}</span>
+        <span class="tl-month-dominant">${ctx.dominant_label}</span>
+        <span class="tl-month-zq">1年後FF期待: ${ctx.zq_rate.toFixed(3)}% (${((ctx.ff_current-ctx.zq_rate)/0.25).toFixed(1)}回織込)</span>
+        <span class="tl-month-toggle ${isOpen?'open'}">▶</span>
+      </div>
+      <div class="tl-events ${isOpen?'':'collapsed'}">
+        ${eventsHtml}
+        <div class="ai-note" style="margin:0;border-radius:0;border-left-width:3px">
+          <div class="ai-note-label">GEMINI ANALYSIS · ${ctx.fomc_date} FOMC</div>
+          ${ctx.ai_reason}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleMonth(hdr) {
+  const events = hdr.nextElementSibling;
+  const toggle = hdr.querySelector('.tl-month-toggle');
+  events.classList.toggle('collapsed');
+  toggle.classList.toggle('open');
+}
+
+// ─── Charts ───
+function initChart(id) {
+  if (CHARTS[id]) CHARTS[id].dispose();
+  CHARTS[id] = echarts.init(el(id), null, {renderer:'canvas'});
+  return CHARTS[id];
+}
+const baseOpts = {
+  backgroundColor:'transparent',
+  tooltip:{trigger:'axis',backgroundColor:'#0d1117',borderColor:'#1c2a3a',textStyle:{color:'#c8d8e8',fontFamily:'IBM Plex Mono',fontSize:10}},
+  grid:{left:'2%',right:'4%',bottom:'3%',top:'20px',containLabel:true},
+};
+const axStyle = {axisLabel:{color:'#3a5570',fontFamily:'IBM Plex Mono',fontSize:9},axisLine:{lineStyle:{color:'#1c2a3a'}},splitLine:{lineStyle:{color:'#111820'}}};
+
 function renderPricesChart() {
-  const sorted = [...DATA].filter(r => n(r['S&P500'])).sort((a, b) => new Date(a['リリース日']) - new Date(b['リリース日']));
-  const dates  = [...new Set(sorted.map(r => r['リリース日']))];
-  const spVal  = dates.map(d => { const rs = sorted.filter(r => r['リリース日'] === d); return rs.length ? n(rs[rs.length-1]['S&P500']) : null; });
-  const nqVal  = dates.map(d => { const rs = sorted.filter(r => r['リリース日'] === d); return rs.length ? n(rs[rs.length-1]['Nasdaq']) : null; });
-  initChart('chPrices').setOption({ ...baseOpts,
-    legend:{ data:['S&P500','Nasdaq'], textStyle:{ color:'#64748b', fontFamily:'Space Mono', fontSize:10 }, right:0, top:0 },
-    xAxis:{ type:'category', data:dates, ...axStyle, axisLabel:{ ...axStyle.axisLabel, rotate:35 } },
-    yAxis:[
-      { type:'value', scale:true, ...axStyle },
-      { type:'value', scale:true, splitLine:{show:false}, ...axStyle },
-    ],
+  const sorted = [...MARKET].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const c = initChart('chPrices');
+  c.setOption({...baseOpts,
+    legend:{data:['S&P500','Nasdaq'],textStyle:{color:'#4a6880',fontFamily:'IBM Plex Mono',fontSize:9},top:0},
+    xAxis:{type:'category',data:sorted.map(r=>r.date),...axStyle,axisLabel:{...axStyle.axisLabel,rotate:30}},
+    yAxis:[{type:'value',scale:true,...axStyle},{type:'value',scale:true,...axStyle,splitLine:{show:false}}],
     series:[
-      { name:'S&P500', type:'line', data:spVal, smooth:true, symbol:'none', yAxisIndex:0,
-        lineStyle:{ color:'#3b82f6', width:2 },
-        areaStyle:{ color:{ type:'linear', x:0,y:0,x2:0,y2:1, colorStops:[{offset:0,color:'rgba(59,130,246,.15)'},{offset:1,color:'rgba(59,130,246,0)'}] } } },
-      { name:'Nasdaq',  type:'line', data:nqVal, smooth:true, symbol:'none', yAxisIndex:1,
-        lineStyle:{ color:'#06b6d4', width:2 } },
+      {name:'S&P500',type:'line',data:sorted.map(r=>r.sp),smooth:true,symbol:'none',yAxisIndex:0,lineStyle:{color:'#00d4ff',width:2},areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(0,212,255,.15)'},{offset:1,color:'rgba(0,212,255,0)'}]}}},
+      {name:'Nasdaq',type:'line',data:sorted.map(r=>r.nq),smooth:true,symbol:'none',yAxisIndex:1,lineStyle:{color:'#00e5a0',width:1.5}},
     ],
   });
+  window.addEventListener('resize',()=>c.resize());
 }
 
 function renderYCChart() {
-  const rows  = [...DATA].filter(r => n(r['10Y-2Y(YieldCurve)']) !== null).sort((a, b) => new Date(a['リリース日']) - new Date(b['リリース日']));
-  const dates = [...new Set(rows.map(r => r['リリース日']))];
-  const vals  = dates.map(d => { const rs = rows.filter(r => r['リリース日'] === d); return rs.length ? n(rs[rs.length-1]['10Y-2Y(YieldCurve)']) : null; });
-  initChart('chYC').setOption({ ...baseOpts,
-    xAxis:{ type:'category', data:dates, ...axStyle, axisLabel:{ ...axStyle.axisLabel, rotate:35 } },
-    yAxis:{ type:'value', ...axStyle, axisLabel:{ ...axStyle.axisLabel, formatter: v => v + '%' } },
-    series:[{ type:'line', data:vals, smooth:true, symbol:'none',
-      lineStyle:{ color:'#f59e0b', width:2 },
-      areaStyle:{ color:{ type:'linear', x:0,y:0,x2:0,y2:1, colorStops:[{offset:0,color:'rgba(245,158,11,.2)'},{offset:1,color:'rgba(245,158,11,0)'}] } },
-      markLine:{ silent:true, data:[{ yAxis:0, lineStyle:{ color:'#f43f5e', type:'dashed', width:1 }, label:{ formatter:'Inversion 0%', color:'#f43f5e', fontFamily:'Space Mono', fontSize:9 } }] },
+  const sorted = [...MARKET].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const c = initChart('chYC');
+  c.setOption({...baseOpts,
+    xAxis:{type:'category',data:sorted.map(r=>r.date),...axStyle,axisLabel:{...axStyle.axisLabel,rotate:30}},
+    yAxis:{type:'value',axisLabel:{...axStyle.axisLabel,formatter:v=>v+'%'},...axStyle},
+    series:[{type:'line',data:sorted.map(r=>r.yc),smooth:true,symbol:'none',lineStyle:{color:'#ffaa00',width:2},
+      areaStyle:{color:{type:'linear',x:0,y:0,x2:0,y2:1,colorStops:[{offset:0,color:'rgba(255,170,0,.2)'},{offset:1,color:'rgba(255,170,0,0)'}]}},
+      markLine:{silent:true,data:[{yAxis:0,lineStyle:{color:'#ff4466',type:'dashed',width:1},label:{formatter:'Inversion',color:'#ff4466',fontFamily:'IBM Plex Mono',fontSize:8}}]},
     }],
   });
 }
 
-function renderSurpChart() {
-  const rows = [...DATA]
-    .filter(r => !['No Indicators','Yield Curve 10Y-2Y'].includes(r['指標名']) && n(r['Surprise(実際-期待)']) !== null && (r['forecast_source'] || '').includes('user'))
-    .sort((a, b) => new Date(a['リリース日']) - new Date(b['リリース日']));
-  if (!rows.length) { initChart('chSurp').setOption({ ...baseOpts, series:[] }); return; }
-  const labels = rows.map(r => r['リリース日']);
-  const surps  = rows.map(r => n(r['Surprise(実際-期待)']));
-  const names  = rows.map(r => r['指標名']);
-  initChart('chSurp').setOption({ ...baseOpts,
-    tooltip:{ trigger:'axis', formatter: p => {
-      const i = p[0].dataIndex;
-      return `<b>${labels[i]}</b><br>${names[i]}<br>Surprise: ${surps[i] >= 0 ? '+' : ''}${surps[i]?.toFixed(3)}`;
-    }},
-    xAxis:{ type:'category', data:labels, ...axStyle, axisLabel:{ ...axStyle.axisLabel, rotate:35 } },
-    yAxis:{ type:'value', ...axStyle },
-    series:[{ type:'bar', barMaxWidth:36,
-      data:surps.map(v => ({ value:v, itemStyle:{ color:v >= 0 ? '#10b981' : '#f43f5e' } })) }],
+function renderFFChart() {
+  const sorted = [...MARKET].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const c = initChart('chFF');
+  c.setOption({...baseOpts,
+    legend:{data:['FF実効金利','1年後期待FF金利'],textStyle:{color:'#4a6880',fontFamily:'IBM Plex Mono',fontSize:9},top:0},
+    xAxis:{type:'category',data:sorted.map(r=>r.date),...axStyle,axisLabel:{...axStyle.axisLabel,rotate:30}},
+    yAxis:{type:'value',axisLabel:{...axStyle.axisLabel,formatter:v=>v+'%'},...axStyle},
+    series:[
+      {name:'FF実効金利',type:'line',data:sorted.map(r=>r.ff),smooth:false,symbol:'circle',symbolSize:4,lineStyle:{color:'#ff4466',width:2},itemStyle:{color:'#ff4466'}},
+      {name:'1年後期待FF金利',type:'line',data:sorted.map(r=>r.zq?100-r.zq:null),smooth:true,symbol:'none',lineStyle:{color:'#00d4ff',width:1.5,type:'dashed'}},
+    ],
   });
 }
 
 function renderTrendSel() {
-  const sel   = el('trendSel');
-  const names = [...new Set(DATA.filter(r => !['No Indicators','Yield Curve 10Y-2Y'].includes(r['指標名']) && n(r['実際値']) !== null).map(r => r['指標名']))];
-  const cur   = sel.value;
-  const existing = [...sel.options].map(o => o.value);
-  names.forEach(nm => {
-    if (!existing.includes(nm)) {
-      const o = document.createElement('option'); o.value = o.textContent = nm; sel.appendChild(o);
-    }
-  });
-  if (names.length && !cur) sel.value = names[0];
+  const sel = el('trendSel');
+  const names = [...new Set(INDICATORS.filter(r=>r.name!=='No Indicators'&&r.actual!==null).map(r=>r.name))];
+  const existing = [...sel.options].map(o=>o.value);
+  names.forEach(nm=>{if(!existing.includes(nm)){const o=document.createElement('option');o.value=o.textContent=nm;sel.appendChild(o);}});
+  if (names.length && !sel.value) sel.value = names[0];
   renderTrendChart();
 }
 
 function renderTrendChart() {
   const name = el('trendSel')?.value;
   if (!name) return;
-  const rows  = [...DATA].filter(r => r['指標名'] === name && n(r['実際値']) !== null).sort((a, b) => new Date(a['リリース日']) - new Date(b['リリース日']));
-  const dates = rows.map(r => r['リリース日']);
-  const vals  = rows.map(r => n(r['実際値']));
-  const thr   = THRESHOLD[name] || {};
-  const marks = [];
-  if (thr.bull !== null && thr.bull !== undefined) {
-    marks.push({ yAxis:thr.bull, lineStyle:{ color:'#10b981', type:'dashed', width:1 }, label:{ formatter:'強気 ' + fmtK(thr.bull), color:'#10b981', fontFamily:'Space Mono', fontSize:9 } });
-  }
-  if (thr.bear !== null && thr.bear !== undefined && thr.bear !== thr.bull) {
-    marks.push({ yAxis:thr.bear, lineStyle:{ color:'#f43f5e', type:'dashed', width:1 }, label:{ formatter:'弱気 ' + fmtK(thr.bear), color:'#f43f5e', fontFamily:'Space Mono', fontSize:9 } });
-  }
-  initChart('chTrend').setOption({ ...baseOpts,
-    xAxis:{ type:'category', data:dates, ...axStyle, axisLabel:{ ...axStyle.axisLabel, rotate:35 } },
-    yAxis:{ type:'value', scale:true, ...axStyle },
-    series:[{ type:'line', data:vals, smooth:false, symbolSize:6, lineStyle:{ color:'#3b82f6', width:2 }, itemStyle:{ color:'#3b82f6' }, markLine:{ silent:true, data:marks } }],
+  const rows = INDICATORS.filter(r=>r.name===name&&r.actual!==null).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const c = initChart('chTrend');
+  c.setOption({...baseOpts,
+    xAxis:{type:'category',data:rows.map(r=>r.date),...axStyle,axisLabel:{...axStyle.axisLabel,rotate:30}},
+    yAxis:{type:'value',scale:true,...axStyle},
+    series:[{type:'line',data:rows.map(r=>r.actual),smooth:false,lineStyle:{color:'#00d4ff',width:2},itemStyle:{color:'#00d4ff'},symbolSize:5}],
   });
 }
 
-// ═══════════════════════════════════════════════════════
-// TRACKING TABLE
-// ═══════════════════════════════════════════════════════
-function renderTracking() {
-  const rows = [...DATA]
-    .filter(r => !['No Indicators','Yield Curve 10Y-2Y'].includes(r['指標名']) && n(r['実際値']) !== null && (r['forecast_source'] || '').includes('user'))
-    .sort((a, b) => new Date(b['リリース日']) - new Date(a['リリース日']));
-  const nofN = DATA.filter(r => r['forecast_source'] === 'actual_as_forecast' && n(r['実際値']) !== null).length;
-
-  let dHit = 0, dN = 0, mae = 0, maeN = 0;
-  rows.forEach(r => {
-    const s = n(r['Surprise(実際-期待)']), a = n(r['実際値']), p = n(r['前回値']), f = n(r['期待値(Consensus)']);
-    if (s !== null) { mae += Math.abs(s); maeN++; }
-    if (a !== null && p !== null && f !== null) { if ((f > p) === (a > p)) dHit++; dN++; }
-  });
-  el('tr-n').textContent   = rows.length;
-  el('tr-dir').textContent = dN ? Math.round(dHit / dN * 100) + '%' : '—';
-  el('tr-mae').textContent = maeN ? (mae / maeN).toFixed(3) : '—';
-  el('tr-nof').textContent = nofN;
-
-  // 翌日S&P変化マップ
-  const spMap = {};
-  DATA.filter(r => n(r['S&P500'])).forEach(r => spMap[r['リリース日']] = n(r['S&P500']));
-  function nextChg(dt) {
-    const next = new Date(dt); next.setDate(next.getDate() + 1);
-    const nk = next.toISOString().slice(0, 10);
-    const cur = spMap[dt], nxt = spMap[nk];
-    return (cur && nxt) ? ((nxt - cur) / cur * 100).toFixed(2) : null;
-  }
-
-  if (!rows.length) {
-    el('trackBody').innerHTML = '<tr><td colspan="8" class="empty">予想入力のあるデータがまだありません</td></tr>';
-    return;
-  }
-  el('trackBody').innerHTML = rows.map(r => {
-    const surp = n(r['Surprise(実際-期待)']), a = n(r['実際値']), p = n(r['前回値']), f = n(r['期待値(Consensus)']);
-    const sc   = surp === null ? 'var(--mut)' : surp > 0 ? 'var(--grn)' : surp < 0 ? 'var(--red)' : 'var(--mut)';
-    const dirOK = (a !== null && p !== null && f !== null)
-      ? (((f > p) === (a > p)) ? '<span style="color:var(--grn)">✓</span>' : '<span style="color:var(--red)">✗</span>')
-      : '—';
-    const nc = nextChg(r['リリース日']);
-    const ncCls = nc === null ? 'neu' : parseFloat(nc) >= 0 ? 'up' : 'dn';
-    return `<tr>
-      <td class="tm">${r['リリース日']}</td>
-      <td class="td-n">${r['指標名']}</td>
-      <td class="tm">${fmtK(a)}</td>
-      <td class="tm" style="color:var(--acc)">${fmtK(f)}</td>
-      <td class="tm" style="color:${sc}">${surp !== null ? (surp > 0 ? '+' : '') + surp.toFixed(3) : '—'}</td>
-      <td style="text-align:center">${dirOK}</td>
-      <td>${srcTag(r['forecast_source'] || 'none')}</td>
-      <td class="tm ${ncCls}">${nc !== null ? (parseFloat(nc) >= 0 ? '+' : '') + nc + '%' : '—'}</td>
-    </tr>`;
-  }).join('');
-}
-
-// ═══════════════════════════════════════════════════════
-// DATA TABLE
-// ═══════════════════════════════════════════════════════
+// ─── Table ───
 function populateFilters() {
   const sel = el('fInd');
-  const existing = [...sel.options].map(o => o.value);
-  [...new Set(DATA.map(r => r['指標名']))].sort().forEach(nm => {
-    if (!existing.includes(nm)) {
-      const o = document.createElement('option'); o.value = o.textContent = nm; sel.appendChild(o);
-    }
+  const existing = [...sel.options].map(o=>o.value);
+  [...new Set(INDICATORS.map(r=>r.name))].sort().forEach(nm=>{
+    if(!existing.includes(nm)){const o=document.createElement('option');o.value=o.textContent=nm;sel.appendChild(o);}
   });
 }
 
 function renderTable() {
-  const iF = el('fInd').value, dF = el('fDate').value, sF = el('fSrc').value;
-  let rows = [...DATA].sort((a, b) => new Date(b['リリース日']) - new Date(a['リリース日']));
-  if (iF) rows = rows.filter(r => r['指標名'] === iF);
-  if (dF) rows = rows.filter(r => r['リリース日'] === dF);
-  if (sF) rows = rows.filter(r => (r['forecast_source'] || '') === sF);
+  const iF=el('fInd').value, dF=el('fDate').value, sF=el('fSrc').value, rF=el('fRegime').value;
+  let rows = [...INDICATORS].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if (iF) rows = rows.filter(r=>r.name===iF);
+  if (dF) rows = rows.filter(r=>r.date===dF);
+  if (sF) rows = rows.filter(r=>(r.src||'').includes(sF));
 
-  if (!rows.length) { el('tblBody').innerHTML = '<tr><td colspan="10" class="empty">該当なし</td></tr>'; return; }
+  const ctx_filtered = rF ? rows.filter(r=>{ const ctx=getFedCtx(r.date); return ctx.regime===rF; }) : rows;
 
-  el('tblBody').innerHTML = rows.map(r => {
-    const surp = n(r['Surprise(実際-期待)']), src = r['forecast_source'] || '';
-    let surpCell;
-    if (src === 'actual_as_forecast') {
-      surpCell = `<td class="tm" style="color:var(--mut)">±0.00 <span style="font-size:9px">(代替)</span></td>`;
-    } else if (surp !== null) {
-      const c = surp > 0 ? 'var(--grn)' : surp < 0 ? 'var(--red)' : 'var(--mut)';
-      surpCell = `<td class="tm" style="color:${c}">${surp > 0 ? '+' : ''}${surp.toFixed(3)}</td>`;
-    } else {
-      surpCell = `<td class="tm neu">—</td>`;
-    }
-    const yoy = n(r['YoY変化(%)']);
+  if (!ctx_filtered.length) { el('tblBody').innerHTML='<tr><td colspan="11" class="empty">該当なし</td></tr>'; return; }
+
+  el('tblBody').innerHTML = ctx_filtered.map(r => {
+    const ctx = getFedCtx(r.date);
+    const meta = INDICATOR_META[r.name] || {};
+    const saved = getConsensus(r.name, r.date);
+    const consensusVal = saved ? saved.value : r.consensus;
+    const src = saved ? 'manual' : r.src;
+    const surprise = r.actual !== null && consensusVal !== null ? r.actual - consensusVal : null;
+    const impactObj = r.actual !== null && consensusVal !== null
+      ? getImpact(r.name, r.actual, consensusVal, ctx.dominant, meta.beat_direction||'UP')
+      : null;
+    const sc = surprise===null ? 'var(--neu)' : surprise>0 ? 'var(--pos)' : surprise<0 ? 'var(--neg)' : 'var(--neu)';
+    const spClass = r.sp_next===null?'neu':r.sp_next>=0?'up':'dn';
+
     return `<tr>
-      <td class="tm">${r['リリース日'] || '—'}</td>
-      <td class="td-n">${r['指標名'] || '—'}</td>
-      <td class="tm">${fmtK(r['実際値'])}</td>
-      <td class="tm" style="color:var(--acc)">${fmtK(r['期待値(Consensus)'])}</td>
-      ${surpCell}
-      <td>${srcTag(src)}</td>
-      <td class="tm">${yoy !== null ? (yoy > 0 ? '+' : '') + yoy.toFixed(2) + '%' : '—'}</td>
-      <td class="tm">${fmtK(r['S&P500'])}</td>
-      <td class="tm">${n(r['10Y-2Y(YieldCurve)']) !== null ? n(r['10Y-2Y(YieldCurve)']).toFixed(3) + '%' : '—'}</td>
-      <td class="td-r">${r['市場反応(自動生成)'] || '—'}</td>
+      <td class="tm">${r.date}</td>
+      <td class="td-n">${r.name||'—'}</td>
+      <td class="tm">${fmtK(r.actual)}</td>
+      <td class="tm" style="color:var(--acc2)">${fmtK(consensusVal)}</td>
+      <td class="tm" style="color:${sc}">${surprise!==null?(surprise>0?'+':'')+fmtN(surprise,3):'—'}</td>
+      <td>${statusBadge(src)}</td>
+      <td><span class="tl-month-regime ${ctx.regime.toLowerCase()}" style="font-size:8px;padding:1px 6px">${ctx.regime}</span></td>
+      <td style="font-size:10px;color:var(--txt2)">${ctx.dominant_label}</td>
+      <td>${impactObj ? impactBadge(impactObj.impact) : '—'}</td>
+      <td class="tm ${spClass}">${r.sp_next!==null?(r.sp_next>=0?'+':'')+r.sp_next+'%':'—'}</td>
+      <td class="tm neu">—</td>
     </tr>`;
   }).join('');
 }
 
-// ═══════════════════════════════════════════════════════
-// EXPORT
-// ═══════════════════════════════════════════════════════
-function exportForecasts() {
-  const fc   = allFC();
-  const rows = [['指標名', '発表日', '予想値', '保存日時', '事後入力']];
-  Object.entries(fc).forEach(([k, v]) => {
-    const parts = k.split('_');
-    const dt = parts[parts.length - 1];
-    const ind = parts.slice(0, -1).join('_');
-    rows.push([ind, dt, v.forecast, v.savedAt, v.retroactive ? 'yes' : 'no']);
-  });
-  const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
-  const a = document.createElement('a');
-  a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csv);
-  a.download = 'macropulse_forecasts.csv';
-  a.click();
+// ─── Notice ───
+function showNotice(msg, type='ok') {
+  const nb=el('notice'), tg=el('ntag'), nm=el('nmsg');
+  nb.className=`notice n-${type}`;
+  tg.textContent=type.toUpperCase();
+  nm.textContent=msg;
+  setTimeout(()=>nb.className='notice',5000);
 }
 
-// ═══════════════════════════════════════════════════════
-// NOTICE
-// ═══════════════════════════════════════════════════════
-let _noticeTimer;
-function showNotice(msg, type = 'info') {
-  clearTimeout(_noticeTimer);
-  const nb = el('notice'), tm = el('ntag'), nm = el('nmsg');
-  nb.className = `notice n-${type}`;
-  nb.style.display = 'flex';
-  tm.textContent = { ok:'OK', warn:'WARN', info:'INFO' }[type] || 'INFO';
-  nm.textContent = msg;
-  _noticeTimer = setTimeout(() => { nb.style.display = 'none'; }, 5000);
-}
-
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 // INIT
-// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
-  updateTs();
-  loadCSVData();
-  setInterval(() => { updateTs(); if (DATA.length) updateTicker(); }, 60000);
+  loadDemoData();
+  setInterval(()=>{ updateTs(); updateTicker(); }, 60000);
 });
 </script>
 </body>
