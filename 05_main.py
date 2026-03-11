@@ -226,11 +226,12 @@ def ism_release_dates(months_ahead: int = 3) -> list[tuple[str, date]]:
 def fred_release_dates(fred_api_key: str, days_ahead: int = 90) -> dict[str, list[date]]:
     """
     FRED Release Calendar API で今後 days_ahead 日分の発表予定日を取得。
+    504 等のサーバーエラー時は最大3回リトライ（1秒・2秒・4秒待機）。
     Returns: {指標名: [date, ...]}
     """
-    today     = date.today()
-    end_date  = today + timedelta(days=days_ahead)
-    results   = {}
+    today    = date.today()
+    end_date = today + timedelta(days=days_ahead)
+    results  = {}
 
     for ind_name, cfg in INDICATOR_CONFIG.items():
         release_id = cfg.get("fred_release_id")
@@ -246,20 +247,34 @@ def fred_release_dates(fred_api_key: str, days_ahead: int = 90) -> dict[str, lis
             f"&api_key={fred_api_key}"
             f"&file_type=json"
         )
-        try:
-            r = requests.get(url, timeout=15)
-            r.raise_for_status()
-            data  = r.json()
-            dates = [
-                datetime.strptime(d["date"], "%Y-%m-%d").date()
-                for d in data.get("release_dates", [])
-                if datetime.strptime(d["date"], "%Y-%m-%d").date() >= today
-            ]
-            results[ind_name] = dates
-            logger.info(f"[FRED Release] {ind_name}: {[str(d) for d in dates]}")
-            time.sleep(0.3)  # API レート制限対策
-        except Exception as e:
-            logger.warning(f"[FRED Release] {ind_name} (id={release_id}): {e}")
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                r = requests.get(url, timeout=20)
+                r.raise_for_status()
+                data  = r.json()
+                dates = [
+                    datetime.strptime(d["date"], "%Y-%m-%d").date()
+                    for d in data.get("release_dates", [])
+                    if datetime.strptime(d["date"], "%Y-%m-%d").date() >= today
+                ]
+                results[ind_name] = dates
+                logger.info(f"[FRED Release] {ind_name}: {[str(d) for d in dates]}")
+                time.sleep(0.3)  # API レート制限対策
+                break  # 成功したらリトライループを抜ける
+            except Exception as e:
+                wait = 2 ** attempt  # 1秒 → 2秒 → 4秒
+                if attempt < max_retries - 1:
+                    logger.warning(
+                        f"[FRED Release] {ind_name} (id={release_id}) "
+                        f"attempt {attempt + 1}/{max_retries}: {e} → retry in {wait}s"
+                    )
+                    time.sleep(wait)
+                else:
+                    logger.warning(
+                        f"[FRED Release] {ind_name} (id={release_id}) "
+                        f"failed after {max_retries} attempts: {e}"
+                    )
 
     return results
 
