@@ -223,7 +223,7 @@ def ism_release_dates(months_ahead: int = 3) -> list[tuple[str, date]]:
 #  FRED Release Calendar
 # ─────────────────────────────────────────────────────────────────
 
-def fred_release_dates(fred_api_key: str, days_ahead: int = 60) -> dict[str, list[date]]:
+def fred_release_dates(fred_api_key: str, days_ahead: int = 90) -> dict[str, list[date]]:
     """
     FRED Release Calendar API で今後 days_ahead 日分の発表予定日を取得。
     Returns: {指標名: [date, ...]}
@@ -268,7 +268,7 @@ def fred_release_dates(fred_api_key: str, days_ahead: int = 60) -> dict[str, lis
 #  スケジュール CSV 自動更新
 # ─────────────────────────────────────────────────────────────────
 
-def update_schedule(fred_api_key: str, days_ahead: int = 60):
+def update_schedule(fred_api_key: str, days_ahead: int = 90):
     """
     毎週日曜に実行。
     1. FRED Release Calendar で FRED 収録指標の発表予定日を取得
