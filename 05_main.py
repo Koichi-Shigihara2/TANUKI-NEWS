@@ -110,8 +110,8 @@ INDICATOR_CONFIG = {
     },
     "Michigan Consumer Sentiment": {
         "fred_id": "UMCSENT",
-        "fred_release_id": 426,      # 426=速報(Preliminary) / 152=確報(Final)
-        "fred_release_id_alt": 152,  # 確報もフォールバックで取得
+        "fred_release_id": None,         # FREDのAPIが空を返すためルールベースで代替
+        "fred_release_id_alt": None,
         "companion_key":  "Michigan 1Y Inflation Exp",
         "companion_fred": "MICH",
         "threshold_bull": 80.0,
@@ -225,6 +225,33 @@ def ism_release_dates(months_ahead: int = 3) -> list[tuple[str, date]]:
                 results.append(("ISM Manufacturing PMI", mfg_date))
         except ValueError as e:
             logger.warning(f"ISM date calc error: {e}")
+    return results
+
+
+def michigan_release_dates(months_ahead: int = 3) -> list[tuple[str, date]]:
+    """
+    ミシガン大消費者信頼感指数の発表予定日をルールベースで算出。
+
+    発表スケジュール:
+      速報 (Preliminary): 毎月第2金曜日
+      確報 (Final):       毎月第4金曜日
+
+    FREDのRelease Calendar APIが空を返すため、独自計算で対応。
+    Returns: [(指標名, release_date), ...]
+    """
+    today = date.today()
+    results = []
+    for offset in range(months_ahead + 1):
+        year  = today.year + (today.month - 1 + offset) // 12
+        month = (today.month - 1 + offset) % 12 + 1
+        try:
+            prelim = nth_weekday(year, month, 4, 2)  # 第2金曜 (weekday=4)
+            final  = nth_weekday(year, month, 4, 4)  # 第4金曜 (weekday=4)
+            for release_date in [prelim, final]:
+                if release_date >= today:
+                    results.append(("Michigan Consumer Sentiment", release_date))
+        except Exception as e:
+            logger.warning(f"Michigan date calc error: {e}")
     return results
 
 
@@ -350,6 +377,25 @@ def update_schedule(fred_api_key: str, days_ahead: int = 90):
             "指標名":    ind_name,
             "発表予定日": date_str,
             "fred_id":  "",
+            "閾値_強気": cfg.get("threshold_bull", ""),
+            "閾値_弱気": cfg.get("threshold_bear", ""),
+            "単位":      cfg.get("unit", ""),
+            "actual":   "",
+            "備考":      note,
+        })
+        logger.info(f"[Schedule+] {ind_name}: {date_str} ({note})")
+
+    # ── Michigan Consumer Sentiment（第2/第4金曜ルール） ──────────
+    for ind_name, release_date in michigan_release_dates(months_ahead=3):
+        cfg      = INDICATOR_CONFIG.get(ind_name, {})
+        date_str = release_date.strftime("%Y-%m-%d")
+        note     = "ミシガン大: 第2/第4金曜 ルールベース算出"
+        if (ind_name, date_str) in registered:
+            continue
+        new_rows.append({
+            "指標名":    ind_name,
+            "発表予定日": date_str,
+            "fred_id":  cfg.get("fred_id", ""),
             "閾値_強気": cfg.get("threshold_bull", ""),
             "閾値_弱気": cfg.get("threshold_bear", ""),
             "単位":      cfg.get("unit", ""),
