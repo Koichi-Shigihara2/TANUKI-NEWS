@@ -328,8 +328,9 @@ def update_schedule(fred_api_key: str, days_ahead: int = 90):
         return
 
     # 追記して保存（既存行 + 新規行、日付順にソート）
-    new_df   = pd.DataFrame(new_rows, columns=SCHEDULE_COLUMNS)
-    combined = pd.concat([df, new_df], ignore_index=True)
+    new_df = pd.DataFrame(new_rows, columns=SCHEDULE_COLUMNS)
+    frames = [f for f in [df, new_df] if not f.empty]
+    combined = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=SCHEDULE_COLUMNS)
     combined = combined.sort_values(["発表予定日", "指標名"]).reset_index(drop=True)
     combined.to_csv(SCHEDULE_PATH, index=False, encoding="utf-8")
     logger.info(f"Schedule updated: {len(new_rows)} rows added → {SCHEDULE_PATH}")
@@ -834,8 +835,8 @@ def run(target_date: date, test_mode: bool = False, do_recalc: bool = False,
 
     # ── CSV upsert ──────────────────────────────────────────────
     new_df = pd.DataFrame(new_rows, columns=CSV_COLUMNS)
-    combined = (pd.concat([existing, new_df], ignore_index=True)
-                if not existing.empty else new_df)
+    frames = [f for f in [existing, new_df] if not f.empty]
+    combined = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=CSV_COLUMNS)
     save_csv(combined)
     logger.info("=== Run complete ===")
 
