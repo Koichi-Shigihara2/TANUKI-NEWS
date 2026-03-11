@@ -198,13 +198,15 @@ function updateCorrelationChart() {
 function updateTable() {
     const tbody = document.getElementById('tableBody');
     const indicatorFilter = document.getElementById('indicatorFilter').value;
-    
+    const dateFilter = document.getElementById('dateFilter').value; // ← 追加
+
     let filteredData = [...economicData];
     if (indicatorFilter) {
         filteredData = filteredData.filter(row => row['指標名'] === indicatorFilter);
     }
-    
-    filteredData.sort((a, b) => new Date(b['リリース日']) - new Date(a['リリース日']));
+    if (dateFilter) { // ← 追加
+        filteredData = filteredData.filter(row => row['リリース日'] === dateFilter);
+    }
 
     if (filteredData.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center">データがありません</td></tr>';
