@@ -28,7 +28,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-CSV_PATH = "data/05_economic_history.csv"
+CSV_PATH = "data/economic_history.csv"
 
 CSV_COLUMNS = [
     "指標名", "リリース日", "実際値", "期待値(Consensus)", "前回値",
