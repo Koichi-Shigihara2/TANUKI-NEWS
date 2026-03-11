@@ -1,11 +1,19 @@
 指標名,発表予定日,fred_id,閾値_強気,閾値_弱気,単位,actual,備考
+Michigan Consumer Sentiment,2026-03-13,UMCSENT,80.0,65.0,index,,ミシガン大: 第2/第4金曜 ルールベース算出
 Initial Jobless Claims,2026-03-16,ICSA,250000.0,300000.0,件,,FRED Release Calendar 自動取得
+Michigan Consumer Sentiment,2026-03-27,UMCSENT,80.0,65.0,index,,ミシガン大: 第2/第4金曜 ルールベース算出
 ISM Manufacturing PMI,2026-04-01,,50.0,50.0,index,,製造業: 米国第1営業日 自動算出
 Average Hourly Earnings YoY,2026-04-03,AHETPI,0.0,0.0,%YoY,,FRED Release Calendar 自動取得
 Durable Goods Orders,2026-04-09,DGORDER,0.0,0.0,%MoM,,FRED Release Calendar 自動取得
+Michigan Consumer Sentiment,2026-04-10,UMCSENT,80.0,65.0,index,,ミシガン大: 第2/第4金曜 ルールベース算出
 Initial Jobless Claims,2026-04-15,ICSA,250000.0,300000.0,件,,FRED Release Calendar 自動取得
+Michigan Consumer Sentiment,2026-04-24,UMCSENT,80.0,65.0,index,,ミシガン大: 第2/第4金曜 ルールベース算出
 ISM Manufacturing PMI,2026-05-01,,50.0,50.0,index,,製造業: 米国第1営業日 自動算出
 Average Hourly Earnings YoY,2026-05-08,AHETPI,0.0,0.0,%YoY,,FRED Release Calendar 自動取得
+Michigan Consumer Sentiment,2026-05-08,UMCSENT,80.0,65.0,index,,ミシガン大: 第2/第4金曜 ルールベース算出
 Initial Jobless Claims,2026-05-15,ICSA,250000.0,300000.0,件,,FRED Release Calendar 自動取得
+Michigan Consumer Sentiment,2026-05-22,UMCSENT,80.0,65.0,index,,ミシガン大: 第2/第4金曜 ルールベース算出
 ISM Manufacturing PMI,2026-06-01,,50.0,50.0,index,,製造業: 米国第1営業日 自動算出
 Average Hourly Earnings YoY,2026-06-05,AHETPI,0.0,0.0,%YoY,,FRED Release Calendar 自動取得
+Michigan Consumer Sentiment,2026-06-12,UMCSENT,80.0,65.0,index,,ミシガン大: 第2/第4金曜 ルールベース算出
+Michigan Consumer Sentiment,2026-06-26,UMCSENT,80.0,65.0,index,,ミシガン大: 第2/第4金曜 ルールベース算出
