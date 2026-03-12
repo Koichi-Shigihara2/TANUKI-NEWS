@@ -478,6 +478,26 @@ function parseCSV(text) {
   }).filter(r => r['指標名']);
 }
 
+// 指標名列を持たないCSV（fed_context, schedule等）用パーサー
+function parseCSVRaw(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  const hdrs = lines[0].split(',').map(h => h.trim());
+  return lines.slice(1).map((line, idx) => {
+    const vals = []; let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === '"') { inQ = !inQ; continue; }
+      if (line[i] === ',' && !inQ) { vals.push(cur.trim()); cur = ''; }
+      else cur += line[i];
+    }
+    vals.push(cur.trim());
+    const row = {};
+    hdrs.forEach((h, i) => row[h] = vals[i] !== undefined ? vals[i] : '');
+    row._id = idx;
+    return row;
+  }).filter(r => Object.values(r).some(v => v && v !== String(idx)));
+}
+
 // ═══════════════════════════════════════════════════════
 // FED CONTEXT & SCHEDULE FETCH
 // ═══════════════════════════════════════════════════════
@@ -486,7 +506,7 @@ async function loadFedContext() {
   try {
     const res = await fetch(FED_CTX_PATH + '?t=' + Date.now());
     if (!res.ok) return;
-    const rows = parseCSV(await res.text());
+    const rows = parseCSVRaw(await res.text());
     if (!rows.length) return;
     // 最新行（record_date降順）
     const latest = rows.sort((a, b) => (b.record_date || '').localeCompare(a.record_date || ''))[0];
@@ -525,7 +545,7 @@ async function loadSchedule() {
   try {
     const res = await fetch(SCHED_PATH + '?t=' + Date.now());
     if (!res.ok) return;
-    const rows = parseCSV(await res.text());
+    const rows = parseCSVRaw(await res.text());
     if (!rows.length) return;
     renderSchedule(rows);
   } catch(e) { console.warn('schedule fetch:', e); }
