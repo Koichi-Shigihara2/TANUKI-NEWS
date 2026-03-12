@@ -162,7 +162,8 @@ INDICATOR_CONFIG = {
     "Building Permits": {
         "fred_id": "PERMIT",
         "input_method": "FRED",
-        "fred_release_id": 235,
+        "fred_release_id": None,   # FRED Release Calendar が空のためルールベース算出
+        "permit_rule": True,       # 毎月第3週火曜（Housing Starts と同日発表）
         "slug": "permit",
         "threshold_bull": 1400.0,
         "threshold_bear": 1200.0,
@@ -307,6 +308,31 @@ def ism_release_dates(months_ahead: int = 3) -> list[tuple[str, date]]:
     return results
 
 
+def building_permit_release_dates(months_ahead: int = 3) -> list[tuple[str, date]]:
+    """
+    Building Permits（住宅建築許可）の発表予定日をルールベースで算出。
+
+    発表スケジュール:
+      毎月第3週火曜日（Housing Starts と同日）
+      ※ 前月分データを当月第3週火曜に発表
+
+    Returns: [("Building Permits", release_date), ...]
+    """
+    today = date.today()
+    results = []
+    for offset in range(months_ahead + 1):
+        year  = today.year + (today.month - 1 + offset) // 12
+        month = (today.month - 1 + offset) % 12 + 1
+        try:
+            # 第3週火曜 = weekday=1（火曜）の第3週
+            release_date = nth_weekday(year, month, 1, 3)
+            if release_date >= today:
+                results.append(("Building Permits", release_date))
+        except Exception as e:
+            logger.warning(f"Building Permits date calc error: {e}")
+    return results
+
+
 def michigan_release_dates(months_ahead: int = 3) -> list[tuple[str, date]]:
     today = date.today()
     results = []
@@ -447,6 +473,22 @@ def update_schedule(fred_api_key: str, days_ahead: int = 90):
             "actual":       "",
             "status":       "scheduled",
         })
+
+    # Building Permits（第3週火曜ルール）
+    for ind_name, rd in building_permit_release_dates(months_ahead=3):
+        date_str = rd.strftime("%Y-%m-%d")
+        if (ind_name, date_str) in registered:
+            continue
+        new_rows.append({
+            "indicator":    ind_name,
+            "release_date": date_str,
+            "fred_id":      INDICATOR_CONFIG.get(ind_name, {}).get("fred_id", ""),
+            "input_method": "FRED",
+            "consensus":    "",
+            "actual":       "",
+            "status":       "scheduled",
+        })
+        logger.info(f"[Schedule+] {ind_name}: {date_str} (第3週火曜 ルールベース算出)")
 
     if not new_rows:
         logger.info("Schedule up to date.")
