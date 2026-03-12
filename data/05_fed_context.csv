@@ -1,2 +1,2 @@
 record_date,fomc_date,regime,dominant_concern,dominant_label,ff_current,zq_ticker,zq_price,zq_rate,cuts_implied,ai_reason,updated_at
-2026-03-10,2026-01-28,BALANCED,BALANCED,両睨み,3.625,FRED:T1YFF,-0.08,3.545,0.32,ZQ先物の織り込みが+0.3回でBALANCED局面と判定（AI分析なし）。,2026-03-12 08:03:34
+2026-03-10,2026-01-28,BALANCED,BALANCED,両睨み,3.625,FRED:T1YFF,-0.08,3.545,0.32,ZQ先物の織り込みが+0.3回でBALANCED局面と判定（AI分析なし）。,2026-03-12 08:08:44
