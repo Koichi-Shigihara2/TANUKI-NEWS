@@ -1,0 +1,101 @@
+name: 05 MACRO PULSE Update
+
+on:
+  schedule:
+    # 毎朝 07:00 JST = 22:00 UTC（前日）
+    - cron: "0 22 * * *"
+    # 毎日 22:00 JST = 13:00 UTC（リターン補完用）
+    - cron: "0 13 * * *"
+    # 毎週日曜 07:00 JST = 土曜 22:00 UTC（スケジュール更新）
+    - cron: "0 22 * * 6"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "実行モード"
+        required: false
+        default: "normal"
+        type: choice
+        options:
+          - normal
+          - update-schedule
+          - fill-returns
+          - recalc
+          - remind
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r 05_requirements.txt
+
+      # ── 毎朝 22:00 UTC（07:00 JST）: 通常実行 ──────────────────
+      - name: Run daily update
+        if: |
+          (github.event_name == 'schedule' && github.event.schedule == '0 22 * * *') ||
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'normal')
+        env:
+          FRED_API_KEY:     ${{ secrets.FRED_API_KEY }}
+          FMP_API_KEY:      ${{ secrets.FMP_API_KEY }}
+          GEMINI_API_KEY:   ${{ secrets.GEMINI_API_KEY }}
+          DISCORD_WEB_HOOK: ${{ secrets.DISCORD_WEB_HOOK }}
+        run: |
+          python 05_main.py --date $(date -u +%Y-%m-%d)
+
+      # ── 毎朝 22:00 UTC: Discord リマインダー（手入力指標） ─────
+      - name: Send Discord reminder for manual indicators
+        if: |
+          (github.event_name == 'schedule' && github.event.schedule == '0 22 * * *') ||
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'remind')
+        env:
+          DISCORD_WEB_HOOK: ${{ secrets.DISCORD_WEB_HOOK }}
+        run: |
+          python 05_main.py --remind --date $(date -u +%Y-%m-%d)
+
+      # ── 毎日 13:00 UTC（22:00 JST）: リターン補完 ──────────────
+      - name: Fill S&P500 returns (t+1/5/10/20)
+        if: |
+          (github.event_name == 'schedule' && github.event.schedule == '0 13 * * *') ||
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'fill-returns')
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: |
+          python 05_main.py --fill-returns
+
+      # ── 毎週土曜 22:00 UTC（日曜 07:00 JST）: スケジュール更新 ─
+      - name: Update schedule + fed context (weekly)
+        if: |
+          (github.event_name == 'schedule' && github.event.schedule == '0 22 * * 6') ||
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'update-schedule')
+        env:
+          FRED_API_KEY:     ${{ secrets.FRED_API_KEY }}
+          GEMINI_API_KEY:   ${{ secrets.GEMINI_API_KEY }}
+          DISCORD_WEB_HOOK: ${{ secrets.DISCORD_WEB_HOOK }}
+        run: |
+          python 05_main.py --update-schedule --date $(date -u +%Y-%m-%d)
+
+      # ── 手動: recalc ────────────────────────────────────────────
+      - name: Recalculate surprises
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.mode == 'recalc'
+        run: |
+          python 05_main.py --recalc
+
+      # ── Git commit & push ───────────────────────────────────────
+      - name: Commit and push data
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git diff --staged --quiet || git commit -m "chore: auto-update $(date -u '+%Y-%m-%d %H:%M') UTC"
+          git push
