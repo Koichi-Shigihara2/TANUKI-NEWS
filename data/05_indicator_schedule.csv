@@ -2,6 +2,7 @@ indicator,release_date,fred_id,input_method,consensus,actual,status
 Michigan Inflation 1Y,2026-03-13,MICH,FRED,,,scheduled
 Michigan Inflation 5Y,2026-03-13,MICH5YF,FRED,,,scheduled
 Initial Claims 4W MA,2026-03-16,IC4WSA,FRED,,,scheduled
+Building Permits,2026-03-17,PERMIT,FRED,,,scheduled
 Michigan Inflation 1Y,2026-03-27,MICH,FRED,,,scheduled
 Michigan Inflation 5Y,2026-03-27,MICH5YF,FRED,,,scheduled
 ISM Manufacturing PMI,2026-04-01,,manual,,,scheduled
@@ -10,6 +11,7 @@ NFP,2026-04-03,PAYEMS,FRED,,,scheduled
 Michigan Inflation 1Y,2026-04-10,MICH,FRED,,,scheduled
 Michigan Inflation 5Y,2026-04-10,MICH5YF,FRED,,,scheduled
 Initial Claims 4W MA,2026-04-15,IC4WSA,FRED,,,scheduled
+Building Permits,2026-04-21,PERMIT,FRED,,,scheduled
 Michigan Inflation 1Y,2026-04-24,MICH,FRED,,,scheduled
 Michigan Inflation 5Y,2026-04-24,MICH5YF,FRED,,,scheduled
 ISM Manufacturing PMI,2026-05-01,,manual,,,scheduled
@@ -18,6 +20,7 @@ Michigan Inflation 1Y,2026-05-08,MICH,FRED,,,scheduled
 Michigan Inflation 5Y,2026-05-08,MICH5YF,FRED,,,scheduled
 NFP,2026-05-08,PAYEMS,FRED,,,scheduled
 Initial Claims 4W MA,2026-05-15,IC4WSA,FRED,,,scheduled
+Building Permits,2026-05-19,PERMIT,FRED,,,scheduled
 Michigan Inflation 1Y,2026-05-22,MICH,FRED,,,scheduled
 Michigan Inflation 5Y,2026-05-22,MICH5YF,FRED,,,scheduled
 ISM Manufacturing PMI,2026-06-01,,manual,,,scheduled
@@ -25,5 +28,6 @@ ISM Non-Manufacturing PMI,2026-06-03,,manual,,,scheduled
 NFP,2026-06-05,PAYEMS,FRED,,,scheduled
 Michigan Inflation 1Y,2026-06-12,MICH,FRED,,,scheduled
 Michigan Inflation 5Y,2026-06-12,MICH5YF,FRED,,,scheduled
+Building Permits,2026-06-16,PERMIT,FRED,,,scheduled
 Michigan Inflation 1Y,2026-06-26,MICH,FRED,,,scheduled
 Michigan Inflation 5Y,2026-06-26,MICH5YF,FRED,,,scheduled
