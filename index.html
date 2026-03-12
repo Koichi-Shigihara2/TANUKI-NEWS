@@ -483,10 +483,18 @@ function parseCSV(text) {
 
 // 指標名列を持たないCSV（fed_context, schedule等）用パーサー
 function parseCSVRaw(text) {
-  const lines = text.trim().split('\n');
+  const lines = text.replace(/
+/g, '
+').replace(/
+/g, '
+').trim().split('
+');
   if (lines.length < 2) return [];
   const hdrs = lines[0].split(',').map(h => h.trim());
-  return lines.slice(1).map((line, idx) => {
+  const result = [];
+  for (let li = 1; li < lines.length; li++) {
+    const line = lines[li];
+    if (!line.trim()) continue;
     const vals = []; let cur = '', inQ = false;
     for (let i = 0; i < line.length; i++) {
       if (line[i] === '"') { inQ = !inQ; continue; }
@@ -496,10 +504,11 @@ function parseCSVRaw(text) {
     vals.push(cur.trim());
     const row = {};
     hdrs.forEach((h, i) => row[h] = vals[i] !== undefined ? vals[i] : '');
-    row._id = idx;
-    return row;
-  }).filter(r => Object.values(r).some(v => v && v !== String(idx)));
+    result.push(row);
+  }
+  return result;
 }
+
 
 // ═══════════════════════════════════════════════════════
 // FED CONTEXT & SCHEDULE FETCH
