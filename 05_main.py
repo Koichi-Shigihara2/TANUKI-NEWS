@@ -308,6 +308,50 @@ def ism_release_dates(months_ahead: int = 3) -> list[tuple[str, date]]:
     return results
 
 
+def cb_consumer_confidence_release_dates(months_ahead: int = 3) -> list[tuple[str, date]]:
+    """
+    CB Consumer Confidence（Conference Board 消費者信頼感指数）の発表予定日。
+    発表スケジュール: 毎月最終火曜日
+    Returns: [("CB Consumer Confidence", release_date), ...]
+    """
+    import calendar
+    today = date.today()
+    results = []
+    for offset in range(months_ahead + 1):
+        year  = today.year + (today.month - 1 + offset) // 12
+        month = (today.month - 1 + offset) % 12 + 1
+        try:
+            last_day = calendar.monthrange(year, month)[1]
+            last = date(year, month, last_day)
+            delta = (last.weekday() - 1) % 7  # 1=火曜
+            release_date = last - timedelta(days=delta)
+            if release_date >= today:
+                results.append(("CB Consumer Confidence", release_date))
+        except Exception as e:
+            logger.warning(f"CB Consumer Confidence date calc error: {e}")
+    return results
+
+
+def cb_lei_release_dates(months_ahead: int = 3) -> list[tuple[str, date]]:
+    """
+    Conference Board LEI（景気先行指数）の発表予定日。
+    発表スケジュール: 毎月第3木曜日
+    Returns: [("Conference Board LEI", release_date), ...]
+    """
+    today = date.today()
+    results = []
+    for offset in range(months_ahead + 1):
+        year  = today.year + (today.month - 1 + offset) // 12
+        month = (today.month - 1 + offset) % 12 + 1
+        try:
+            release_date = nth_weekday(year, month, 3, 3)  # 3=木曜, 第3週
+            if release_date >= today:
+                results.append(("Conference Board LEI", release_date))
+        except Exception as e:
+            logger.warning(f"Conference Board LEI date calc error: {e}")
+    return results
+
+
 def building_permit_release_dates(months_ahead: int = 3) -> list[tuple[str, date]]:
     """
     Building Permits（住宅建築許可）の発表予定日をルールベースで算出。
@@ -489,6 +533,38 @@ def update_schedule(fred_api_key: str, days_ahead: int = 90):
             "status":       "scheduled",
         })
         logger.info(f"[Schedule+] {ind_name}: {date_str} (第3週火曜 ルールベース算出)")
+
+    # CB Consumer Confidence（毎月最終火曜ルール）
+    for ind_name, rd in cb_consumer_confidence_release_dates(months_ahead=3):
+        date_str = rd.strftime("%Y-%m-%d")
+        if (ind_name, date_str) in registered:
+            continue
+        new_rows.append({
+            "indicator":    ind_name,
+            "release_date": date_str,
+            "fred_id":      INDICATOR_CONFIG.get(ind_name, {}).get("fred_id", ""),
+            "input_method": "FRED",
+            "consensus":    "",
+            "actual":       "",
+            "status":       "scheduled",
+        })
+        logger.info(f"[Schedule+] {ind_name}: {date_str} (最終火曜 ルールベース算出)")
+
+    # Conference Board LEI（毎月第3木曜ルール）
+    for ind_name, rd in cb_lei_release_dates(months_ahead=3):
+        date_str = rd.strftime("%Y-%m-%d")
+        if (ind_name, date_str) in registered:
+            continue
+        new_rows.append({
+            "indicator":    ind_name,
+            "release_date": date_str,
+            "fred_id":      INDICATOR_CONFIG.get(ind_name, {}).get("fred_id", ""),
+            "input_method": "manual",
+            "consensus":    "",
+            "actual":       "",
+            "status":       "scheduled",
+        })
+        logger.info(f"[Schedule+] {ind_name}: {date_str} (第3木曜 ルールベース算出)")
 
     if not new_rows:
         logger.info("Schedule up to date.")
