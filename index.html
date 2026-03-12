@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>MACRO PULSE</title>
   <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -505,16 +508,20 @@ function parseCSVRaw(text) {
 async function loadFedContext() {
   try {
     const res = await fetch(FED_CTX_PATH + '?t=' + Date.now());
-    if (!res.ok) return;
-    const rows = parseCSVRaw(await res.text());
-    if (!rows.length) return;
+    if (!res.ok) { console.warn('fed_context HTTP', res.status); return; }
+    const text = await res.text();
+    const rows = parseCSVRaw(text);
+    console.log('[FedCtx] rows:', rows.length, rows[0]);
+    if (!rows.length) { console.warn('fed_context: 0 rows parsed'); return; }
     // 最新行（record_date降順）
     const latest = rows.sort((a, b) => (b.record_date || '').localeCompare(a.record_date || ''))[0];
+    if (!latest) return;
     renderRegimeBar(latest);
   } catch(e) { console.warn('fed_context fetch:', e); }
 }
 
 function renderRegimeBar(d) {
+  console.log('[RegimeBar] called with:', JSON.stringify(d));
   const regime  = (d.regime || 'BALANCED').toUpperCase();
   const ff      = parseFloat(d.ff_current);
   const expFF   = parseFloat(d.zq_rate);
