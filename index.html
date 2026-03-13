@@ -1087,56 +1087,9 @@ function renderSchedule(rows) {
 
 
 // ═══════════════════════════════════════════════════════
-// ② スコア比較機能（localStorage でスナップショット保存）
+// ② スコア比較機能（events.csv から任意日のスコアを再計算）
+//    localStorageに依存しないため家でも会社でも同一結果
 // ═══════════════════════════════════════════════════════
-const SNAP_KEY = 'macropulse_snapshots';
-
-// スコアをLocalStorageに保存（日次）
-function saveScoreSnapshot(score, phase) {
-  let snaps = {};
-  try { snaps = JSON.parse(localStorage.getItem(SNAP_KEY)||'{}'); } catch{}
-  const today = new Date().toISOString().slice(0,10);
-  snaps[today] = {score, phase, ts: Date.now()};
-  // 90日以上前のスナップショットを削除
-  const cutoff = new Date(); cutoff.setDate(cutoff.getDate()-90);
-  Object.keys(snaps).forEach(k=>{ if(new Date(k)<cutoff)delete snaps[k]; });
-  try { localStorage.setItem(SNAP_KEY, JSON.stringify(snaps)); } catch{}
-}
-
-function getSnapshotBefore(daysAgo) {
-  let snaps = {};
-  try { snaps = JSON.parse(localStorage.getItem(SNAP_KEY)||'{}'); } catch{}
-  const dates = Object.keys(snaps).sort().reverse();
-  const target = new Date(); target.setDate(target.getDate()-daysAgo);
-  // targetに最も近い過去の日付を探す
-  for (const d of dates) {
-    if (new Date(d) <= target) return {date:d, ...snaps[d]};
-  }
-  return null;
-}
-
-function getSnapshotLastMonthEnd() {
-  let snaps = {};
-  try { snaps = JSON.parse(localStorage.getItem(SNAP_KEY)||'{}'); } catch{}
-  const now = new Date();
-  const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0); // 前月末
-  const dates = Object.keys(snaps).sort().reverse();
-  for (const d of dates) {
-    if (new Date(d) <= lastMonthEnd) return {date:d, ...snaps[d]};
-  }
-  return null;
-}
-
-function getSnapshotByDate(dateStr) {
-  let snaps = {};
-  try { snaps = JSON.parse(localStorage.getItem(SNAP_KEY)||'{}'); } catch{}
-  const target = new Date(dateStr);
-  const dates = Object.keys(snaps).sort().reverse();
-  for (const d of dates) {
-    if (new Date(d) <= target) return {date:d, ...snaps[d]};
-  }
-  return null;
-}
 
 function phaseLabel(score) {
   if(score<30)return'拡張';
@@ -1145,51 +1098,142 @@ function phaseLabel(score) {
   return'後退';
 }
 
+function phaseColor(score){
+  return score<30?'var(--grn)':score<52?'var(--acc)':score<70?'var(--amb)':'var(--red)';
+}
+
+// asOfDate (Date) 時点での最新実績値を指標名から取得
+function latestActualAsOf(ind, asOf) {
+  if(!DATA.length) return null;
+  const asOfMs = asOf instanceof Date ? asOf.getTime() : new Date(asOf).getTime();
+  const rows = DATA.filter(r => {
+    if(r[COL.indicator] !== ind) return false;
+    const v = n(r[COL.actual]);
+    if(v === null) return false;
+    return new Date(r[COL.date]).getTime() <= asOfMs;
+  }).sort((a,b) => new Date(b[COL.date]) - new Date(a[COL.date]));
+  return rows[0] ? n(rows[0][COL.actual]) : null;
+}
+
+// asOfDate 時点でのスコアを計算（renderPhaseGaugeと同一ロジック）
+function computeScoreAsOf(asOf) {
+  const la = ind => latestActualAsOf(ind, asOf);
+
+  const yc     = la('Yield Curve 10Y-2Y');
+  const hy     = la('HY Spread');
+  const vix    = la('VIX');
+  const ism    = la('ISM Manufacturing PMI');
+  const ismNm  = la('ISM Non-Manufacturing PMI');
+  const claims = la('Initial Claims 4W MA');
+  const cbcc   = la('Michigan Consumer Sentiment');
+  const lei    = la('Conference Board LEI');
+
+  function calcSignal(ind, val) {
+    if(val === null) return {score:50, w:0};
+    switch(ind) {
+      case 'yc':
+        return {score: val<-0.5?90:val<0?70:val<0.5?40:15, w:20};
+      case 'hy':
+        return {score: val>6?90:val>4.5?70:val>3.5?40:15, w:15};
+      case 'vix':
+        return {score: val>35?90:val>25?70:val>18?40:15, w:10};
+      case 'ism':
+        return {score: val<45?88:val<50?65:val<53?35:12, w:18};
+      case 'ismNm':
+        return {score: val<48?82:val<52?50:18, w:12};
+      case 'claims':
+        return {score: val>300000?85:val>250000?60:val>215000?35:15, w:10};
+      case 'cbcc':
+        return {score: val<60?82:val<75?72:val<90?60:30, w:8};
+      case 'lei':
+        return {score: val<99?85:val<100?45:18, w:7};
+    }
+    return {score:50, w:0};
+  }
+
+  const sigs = [
+    calcSignal('yc',    yc),
+    calcSignal('hy',    hy),
+    calcSignal('vix',   vix),
+    calcSignal('ism',   ism),
+    calcSignal('ismNm', ismNm),
+    calcSignal('claims',claims),
+    calcSignal('cbcc',  cbcc),
+    calcSignal('lei',   lei),
+  ];
+
+  const totalW = sigs.reduce((s,sg)=>s+sg.w, 0);
+  if(!totalW) return null;
+  return Math.round(sigs.reduce((s,sg)=>s+sg.score*sg.w, 0) / totalW);
+}
+
+// 指定日以前に最もデータがある日付を文字列で返す
+function latestDataDateBefore(asOf) {
+  if(!DATA.length) return null;
+  const asOfMs = new Date(asOf).getTime();
+  const rows = DATA.filter(r=>n(r[COL.actual])!==null && new Date(r[COL.date]).getTime()<=asOfMs)
+    .sort((a,b)=>new Date(b[COL.date])-new Date(a[COL.date]));
+  return rows[0] ? rows[0][COL.date] : null;
+}
+
 function renderCompareBar(currentScore, currentPhase) {
-  saveScoreSnapshot(currentScore, currentPhase);
   const bar = el('compareBar');
   if(!bar) return;
   bar.style.display = 'flex';
 
   el('cmp-now').textContent = currentScore;
-  el('cmp-now').style.color = currentScore<30?'var(--grn)':currentScore<52?'var(--acc)':currentScore<70?'var(--amb)':'var(--red)';
+  el('cmp-now').style.color = phaseColor(currentScore);
   el('cmp-now-phase').textContent = currentPhase;
 
-  function fillCell(scoreId, deltaId, dateId, snap) {
-    if(!snap){
-      el(scoreId).textContent='—'; el(deltaId).textContent='—'; el(dateId).textContent='データなし';
+  function fillCell(scoreId, deltaId, dateId, asOf, label) {
+    const score = computeScoreAsOf(asOf);
+    const refDate = latestDataDateBefore(asOf);
+    const scoreEl=el(scoreId), deltaEl=el(deltaId), dateEl=el(dateId);
+    if(score===null || refDate===null){
+      scoreEl.textContent='—'; scoreEl.style.color='var(--mut)';
+      deltaEl.textContent='データなし'; deltaEl.className='cmp-delta flat';
+      dateEl.textContent=label;
       return;
     }
-    const diff = currentScore - snap.score;
-    const scoreEl=el(scoreId), deltaEl=el(deltaId), dateEl=el(dateId);
-    scoreEl.textContent = snap.score;
-    scoreEl.style.color = snap.score<30?'var(--grn)':snap.score<52?'var(--acc)':snap.score<70?'var(--amb)':'var(--red)';
+    const diff = currentScore - score;
+    scoreEl.textContent = score;
+    scoreEl.style.color = phaseColor(score);
     const sign = diff>0?'+':'';
-    deltaEl.textContent = `${sign}${diff} (${phaseLabel(snap.score)})`;
+    deltaEl.textContent = `${sign}${diff}`;
     deltaEl.className = 'cmp-delta '+(diff>0?'up':diff<0?'dn':'flat');
-    dateEl.textContent = snap.date;
+    dateEl.textContent = refDate+' 時点 ('+phaseLabel(score)+')';
   }
 
-  fillCell('cmp-d1-score','cmp-d1-delta','cmp-d1-date', getSnapshotBefore(1));
-  fillCell('cmp-w1-score','cmp-w1-delta','cmp-w1-date', getSnapshotBefore(7));
-  fillCell('cmp-m1-score','cmp-m1-delta','cmp-m1-date', getSnapshotLastMonthEnd());
+  const today = new Date(); today.setHours(23,59,59,0);
+  const d1 = new Date(today); d1.setDate(d1.getDate()-1); d1.setHours(23,59,59,0);
+  const w1 = new Date(today); w1.setDate(w1.getDate()-7); w1.setHours(23,59,59,0);
+  // 前月末: 今月の1日-1日
+  const m1 = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59);
+
+  fillCell('cmp-d1-score','cmp-d1-delta','cmp-d1-date', d1, '前日');
+  fillCell('cmp-w1-score','cmp-w1-delta','cmp-w1-date', w1, '先週');
+  fillCell('cmp-m1-score','cmp-m1-delta','cmp-m1-date', m1, '前月末');
 }
 
 function renderCustomCmp() {
   const dateStr = el('cmpDateInput').value;
   if(!dateStr) return;
-  const snap = getSnapshotByDate(dateStr);
   const currentScore = parseInt(el('pg-score-num').textContent||'0');
-  if(!snap){
-    el('cmp-custom-delta').textContent='データなし';
-    el('cmp-custom-label').textContent=dateStr+' 以前のデータ未蓄積';
+  const asOf = new Date(dateStr); asOf.setHours(23,59,59,0);
+  const score = computeScoreAsOf(asOf);
+  const refDate = latestDataDateBefore(asOf);
+  if(score===null||refDate===null){
+    el('cmp-custom-delta').textContent='この日付以前のデータなし';
+    el('cmp-custom-delta').className='cmp-delta flat';
+    el('cmp-custom-label').textContent='データ範囲外';
     return;
   }
-  const diff = currentScore - snap.score;
+  const diff = currentScore - score;
   const sign = diff>0?'+':'';
-  el('cmp-custom-delta').textContent=`${sign}${diff} (${snap.date}: ${phaseLabel(snap.score)})`;
+  el('cmp-custom-delta').textContent=`${sign}${diff}`;
   el('cmp-custom-delta').className='cmp-delta '+(diff>0?'up':diff<0?'dn':'flat');
-  el('cmp-custom-label').textContent=snap.date+' のスナップショット';
+  el('cmp-custom-label').textContent=refDate+' 時点: スコア'+score+' ('+phaseLabel(score)+')';
+  el('cmp-custom-delta').style.color = phaseColor(score);
 }
 
 // ═══════════════════════════════════════════════════════
