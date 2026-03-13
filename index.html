@@ -208,6 +208,18 @@
     .pg-score-num{font-family:var(--mono);font-size:28px;font-weight:700;line-height:1}
     .pg-score-label{font-family:var(--mono);font-size:9px;color:var(--mut);letter-spacing:.1em;text-align:center}
     .pg-alert{margin:0 0 0;padding:8px 20px;font-family:var(--mono);font-size:10px;border-top:1px solid var(--bdr);display:none;gap:8px;align-items:flex-start;line-height:1.6}
+    /* ── Layer 2: Health Bars ── */
+    .l2-wrap{border:1px solid var(--bdr);background:var(--sur);margin-bottom:14px;padding:14px 20px}
+    .l2-title{font-family:var(--mono);font-size:9px;letter-spacing:.15em;color:var(--mut);text-transform:uppercase;margin-bottom:12px}
+    .l2-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:10px}
+    .l2-row{display:flex;flex-direction:column;gap:4px}
+    .l2-row-top{display:flex;align-items:baseline;justify-content:space-between;gap:6px}
+    .l2-name{font-family:var(--mono);font-size:10px;color:var(--mut);letter-spacing:.08em;white-space:nowrap}
+    .l2-val{font-family:var(--mono);font-size:12px;font-weight:700}
+    .l2-meta{font-family:var(--mono);font-size:9px;color:var(--mut)}
+    .l2-bar-track{height:6px;background:var(--sur2);border:1px solid var(--bdr);border-radius:2px;position:relative;overflow:hidden}
+    .l2-bar-fill{height:100%;border-radius:2px;transition:width .6s ease,background .4s ease}
+    .l2-bar-mid{position:absolute;top:0;left:50%;width:1px;height:100%;background:var(--bdr);opacity:.7}
     /* phase colors */
     .phase-expand  {color:var(--grn)}
     .phase-plateau {color:var(--acc)}
@@ -301,6 +313,12 @@
       <span style="color:var(--amb);font-family:var(--mono)">⚠ ALERT</span>
       <span id="pg-alert-msg"></span>
     </div>
+  </div>
+
+  <!-- Layer 2: Health Bars -->
+  <div class="l2-wrap" id="l2Wrap">
+    <div class="l2-title">▸ INDICATOR HEALTH BARS — 各指標の現在地（直近値 vs 閾値）</div>
+    <div class="l2-grid" id="l2Grid"><div style="font-family:var(--mono);font-size:10px;color:var(--mut)">Loading...</div></div>
   </div>
 
   <!-- Ticker -->
@@ -545,7 +563,7 @@ const THRESHOLD = {
   'Initial Claims 4W MA':     { bull:250000, bear:330000, unit:'件'    },
   'Michigan Inflation 1Y':    { bull:null,   bear:null,   unit:'%'     },
   'Michigan Inflation 5Y':    { bull:null,   bear:null,   unit:'%'     },
-  'Michigan Consumer Sentiment': { bull:90,    bear:70,     unit:'index' },
+  'CB Consumer Confidence':   { bull:100,    bear:80,     unit:'index' },
   'Building Permits':         { bull:1400,   bear:1200,   unit:'千件'  },
   'Yield Curve 10Y-2Y':       { bull:0,      bear:0,      unit:'%'     },
   'HY Spread':                { bull:null,   bear:null,   unit:'%'     },
@@ -809,6 +827,7 @@ function render() {
   updateTs();
   updateTicker();
   renderPhaseGauge();
+  renderL2();
   renderEnvSnap();
   renderCards();
   cmpPopulate();
@@ -1016,6 +1035,149 @@ function renderTable() {
 // UPCOMING RELEASES — 金融環境スナップショット
 // ═══════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────────────
+// LAYER 2 — Indicator Health Bars
+// ─────────────────────────────────────────────────────────────────
+function renderL2() {
+  const L2_INDICATORS = [
+    {
+      key: 'Yield Curve 10Y-2Y',
+      label: 'YC 10Y-2Y',
+      unit: '%',
+      lead: '先行12ヶ月',
+      // バー: -1.0(最悪) 〜 +2.0(最良)、中央=0
+      min: -1.5, max: 2.0, midVal: 0,
+      // 閾値: bull>=0.5, bear<=-0.2
+      bull: 0.5, bear: -0.2,
+      fmt: v => (v >= 0 ? '+' : '') + v.toFixed(2) + '%',
+      // 方向: 値が高いほどbull（左=bear, 右=bull）
+      bullRight: true,
+    },
+    {
+      key: 'ISM Manufacturing PMI',
+      label: 'ISM Manufacturing',
+      unit: 'index',
+      lead: '先行3ヶ月',
+      min: 35, max: 65, midVal: 50,
+      bull: 52, bear: 48,
+      fmt: v => v.toFixed(1),
+      bullRight: true,
+    },
+    {
+      key: 'ISM Non-Manufacturing PMI',
+      label: 'ISM Non-Mfg',
+      unit: 'index',
+      lead: '先行1ヶ月',
+      min: 35, max: 65, midVal: 50,
+      bull: 52, bear: 48,
+      fmt: v => v.toFixed(1),
+      bullRight: true,
+    },
+    {
+      key: 'HY Spread',
+      label: 'HY Spread',
+      unit: '%',
+      lead: '先行2ヶ月',
+      min: 2.5, max: 10.0, midVal: 5.0,
+      bull: 4.0, bear: 6.5,
+      fmt: v => v.toFixed(2) + '%',
+      // HYは逆: 値が低いほどbull（左=bull, 右=bear）
+      bullRight: false,
+    },
+    {
+      key: 'VIX',
+      label: 'VIX',
+      unit: 'index',
+      lead: '即時',
+      min: 10, max: 45, midVal: 20,
+      bull: 18, bear: 25,
+      fmt: v => v.toFixed(1),
+      bullRight: false,
+    },
+    {
+      key: 'Michigan Consumer Sentiment',
+      label: 'Michigan Sentiment',
+      unit: 'index',
+      lead: '先行2ヶ月',
+      min: 50, max: 110, midVal: 80,
+      bull: 90, bear: 65,
+      fmt: v => v.toFixed(1),
+      bullRight: true,
+    },
+    {
+      key: 'OECD CLI（米国）',
+      label: 'OECD CLI',
+      unit: 'index',
+      lead: '先行6ヶ月',
+      min: 98.0, max: 101.5, midVal: 100,
+      bull: 100.3, bear: 99.0,
+      fmt: v => v.toFixed(2),
+      bullRight: true,
+    },
+    {
+      key: 'Initial Claims 4W MA',
+      label: 'Initial Claims 4WMA',
+      unit: '千件',
+      lead: '先行1ヶ月',
+      min: 180, max: 280, midVal: 230,
+      bull: 215, bear: 245,
+      fmt: v => Math.round(v).toLocaleString(),
+      bullRight: false,
+    },
+  ];
+
+  const html = L2_INDICATORS.map(cfg => {
+    const val = latestActual(cfg.key);
+    if (val === null) {
+      return `<div class="l2-row">
+        <div class="l2-row-top">
+          <span class="l2-name">${cfg.label}</span>
+          <span class="l2-val" style="color:var(--mut)">—</span>
+          <span class="l2-meta">${cfg.lead}</span>
+        </div>
+        <div class="l2-bar-track"><div class="l2-bar-mid"></div><div class="l2-bar-fill" style="width:50%;background:var(--bdr)"></div></div>
+      </div>`;
+    }
+
+    // バー幅（0〜100%）
+    const pct = Math.max(0, Math.min(100,
+      (val - cfg.min) / (cfg.max - cfg.min) * 100
+    ));
+
+    // シグナル判定
+    let signal, color;
+    if (cfg.bullRight) {
+      if      (val >= cfg.bull) { signal = 'BULL';    color = 'var(--grn)'; }
+      else if (val <= cfg.bear) { signal = 'BEAR';    color = 'var(--red)'; }
+      else if (val < (cfg.bull + cfg.bear) / 2) { signal = 'CAUTION'; color = 'var(--amb)'; }
+      else                      { signal = 'NEUTRAL'; color = 'var(--acc)'; }
+    } else {
+      if      (val <= cfg.bull) { signal = 'BULL';    color = 'var(--grn)'; }
+      else if (val >= cfg.bear) { signal = 'BEAR';    color = 'var(--red)'; }
+      else if (val > (cfg.bull + cfg.bear) / 2) { signal = 'CAUTION'; color = 'var(--amb)'; }
+      else                      { signal = 'NEUTRAL'; color = 'var(--acc)'; }
+    }
+
+    // 中央線の位置
+    const midPct = (cfg.midVal - cfg.min) / (cfg.max - cfg.min) * 100;
+
+    return `<div class="l2-row">
+      <div class="l2-row-top">
+        <span class="l2-name">${cfg.label}</span>
+        <span class="l2-val" style="color:${color}">${cfg.fmt(val)}</span>
+        <span class="l2-meta" style="color:${color};margin-right:auto;margin-left:4px">${signal}</span>
+        <span class="l2-meta">${cfg.lead}</span>
+      </div>
+      <div class="l2-bar-track">
+        <div class="l2-bar-mid" style="left:${midPct.toFixed(1)}%"></div>
+        <div class="l2-bar-fill" style="width:${pct.toFixed(1)}%;background:${color}"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  el('l2Grid').innerHTML = html;
+}
+
 // PHASE GAUGE — 景気フェーズ判定メーター
 // ═══════════════════════════════════════════════════════
 function renderPhaseGauge() {
@@ -1040,7 +1202,7 @@ function renderPhaseGauge() {
   const ismNm = latestActual('ISM Non-Manufacturing PMI');
   const claims= latestActual('Initial Claims 4W MA');
   const nfp   = latestActual('NFP');
-  const cbcc  = latestActual('Michigan Consumer Sentiment');
+  const cbcc  = latestActual('CB Consumer Confidence');
   const lei   = latestActual('Conference Board LEI');
   const mich  = latestActual('Michigan Inflation 1Y');
 
@@ -1127,16 +1289,16 @@ function renderPhaseGauge() {
   }
   signals.push({ name:'初回失業申請 4WMA', val:clLabel, score:clScore, signal:clSignal, weight:10, lead:'先行1ヶ月' });
 
-  // 7. Michigan Consumer Sentiment (weight:8)
+  // 7. CB Consumer Confidence (weight:8)
   let cbScore = 50, cbSignal = 'neutral', cbLabel = '—';
   if (cbcc !== null) {
     cbLabel = cbcc.toFixed(1);
-    if      (cbcc < 60)  { cbScore = 82; cbSignal = 'bear'; }
-    else if (cbcc < 75)  { cbScore = 62; cbSignal = 'caution'; }
-    else if (cbcc < 90)  { cbScore = 38; cbSignal = 'neutral'; }
+    if      (cbcc < 70)  { cbScore = 82; cbSignal = 'bear'; }
+    else if (cbcc < 90)  { cbScore = 62; cbSignal = 'caution'; }
+    else if (cbcc < 110) { cbScore = 38; cbSignal = 'neutral'; }
     else                 { cbScore = 15; cbSignal = 'bull'; }
   }
-  signals.push({ name:'ミシガン消費者信頼感', val:cbLabel, score:cbScore, signal:cbSignal, weight:8, lead:'先行2ヶ月' });
+  signals.push({ name:'CB消費者信頼感', val:cbLabel, score:cbScore, signal:cbSignal, weight:8, lead:'先行2ヶ月' });
 
   // 8. Conference Board LEI (weight:7)
   let leiScore = 50, leiSignal = 'neutral', leiLabel = '—';
