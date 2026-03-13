@@ -1125,11 +1125,11 @@ function renderL2() {
     {
       key: 'Initial Claims 4W MA',
       label: 'Initial Claims 4WMA',
-      unit: '千件',
+      unit: '件',
       lead: '先行1ヶ月',
-      min: 180, max: 280, midVal: 230,
-      bull: 215, bear: 245,
-      fmt: v => Math.round(v).toLocaleString(),
+      min: 180000, max: 280000, midVal: 230000,
+      bull: 215000, bear: 245000,
+      fmt: v => (v/1000).toFixed(1) + 'K',
       bullRight: false,
     },
   ];
