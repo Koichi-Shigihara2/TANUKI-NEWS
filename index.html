@@ -850,7 +850,31 @@ function onL3SliderInput(idx){
 
 function resetL3Slider(){
   const slider=el('l3Slider');
-  if(slider){slider.value=slider.max;onL3SliderInput(slider.max);}
+  if(!slider||!L3_SNAPSHOTS.length)return;
+  const current=parseInt(slider.value);
+  const target=parseInt(slider.max);
+  if(current>=target){onL3SliderInput(target);return;}
+
+  // アニメーション: currentからtargetまでなめらかに戻す
+  const totalSteps=target-current;
+  const duration=900; // ms
+  const interval=Math.max(16, Math.round(duration/totalSteps));
+  let step=current;
+
+  // ボタンを無効化してアニメーション中を表示
+  const btn=document.querySelector('button[onclick="resetL3Slider()"]');
+  if(btn){btn.disabled=true;btn.textContent='戻り中...';}
+
+  const timer=setInterval(()=>{
+    step++;
+    slider.value=step;
+    onL3SliderInput(step);
+    if(step>=target){
+      clearInterval(timer);
+      if(btn){btn.disabled=false;btn.textContent='現在に戻す';}
+      el('l3SliderDate').textContent='現在';
+    }
+  },interval);
 }
 
 function drawL3Chart(nowVals, isNow){
@@ -906,8 +930,8 @@ function drawL3Chart(nowVals, isNow){
   const d2001=sim2001>=75?'⚠ 構造が近似。注意が必要':sim2001>=60?'一部の指標が類似傾向':'現在は大きく乖離';
 
   scoresEl.innerHTML=
-    mkRow('2019年末（後退入口局面）',sim2019,l3ScoreColor(sim2019),d2019)+
-    mkRow('2001年（ITバブル崩壊）',sim2001,l3ScoreColor(sim2001),d2001)+
+    mkRow('2019年末（後退入口局面）',sim2019,L3_COLORS.y2019.line,d2019)+
+    mkRow('2001年（ITバブル崩壊）',sim2001,L3_COLORS.y2001.line,d2001)+
     `<div class="l3-note">
       各指標を 0（ベア）〜 100（ブル）に正規化し、<br>
       ユークリッド距離から類似度を算出。<br>
