@@ -1039,6 +1039,14 @@ function renderTable() {
 // LAYER 2 — Indicator Health Bars
 // ─────────────────────────────────────────────────────────────────
 function renderL2() {
+  if (!DATA.length) { el('l2Grid').innerHTML = '<div style="font-family:var(--mono);font-size:10px;color:var(--mut)">データなし</div>'; return; }
+
+  // ローカルヘルパー
+  const latestActual = (ind) => {
+    const rows = DATA.filter(r => r[COL.indicator] === ind && n(r[COL.actual]) !== null)
+      .sort((a,b) => new Date(b[COL.date]) - new Date(a[COL.date]));
+    return rows[0] ? n(rows[0][COL.actual]) : null;
+  };
   const L2_INDICATORS = [
     {
       key: 'Yield Curve 10Y-2Y',
