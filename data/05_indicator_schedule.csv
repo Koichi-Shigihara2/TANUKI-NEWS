@@ -1,4 +1,5 @@
 indicator,release_date,fred_id,input_method,consensus,actual,status
+Michigan Consumer Sentiment,2026-03-13,UMCSENT,FRED,,,scheduled
 Michigan Inflation 1Y,2026-03-13,MICH,FRED,,,scheduled
 Michigan Inflation 5Y,2026-03-13,MICH5YF,FRED,,,scheduled
 Initial Claims 4W MA,2026-03-16,IC4WSA,FRED,,,scheduled
@@ -10,8 +11,10 @@ CB Consumer Confidence,2026-03-31,CSCICP03USM665S,FRED,,,scheduled
 ISM Manufacturing PMI,2026-04-01,,manual,,,scheduled
 ISM Non-Manufacturing PMI,2026-04-03,,manual,,,scheduled
 NFP,2026-04-03,PAYEMS,FRED,,,scheduled
+Michigan Consumer Sentiment,2026-04-10,UMCSENT,FRED,,,scheduled
 Michigan Inflation 1Y,2026-04-10,MICH,FRED,,,scheduled
 Michigan Inflation 5Y,2026-04-10,MICH5YF,FRED,,,scheduled
+Conference Board LEI,2026-04-13,USALOLITONOSTSAM,manual,,,scheduled
 Initial Claims 4W MA,2026-04-15,IC4WSA,FRED,,,scheduled
 Conference Board LEI,2026-04-16,,manual,,,scheduled
 Building Permits,2026-04-21,PERMIT,FRED,,,scheduled
@@ -20,9 +23,11 @@ Michigan Inflation 5Y,2026-04-24,MICH5YF,FRED,,,scheduled
 CB Consumer Confidence,2026-04-28,CSCICP03USM665S,FRED,,,scheduled
 ISM Manufacturing PMI,2026-05-01,,manual,,,scheduled
 ISM Non-Manufacturing PMI,2026-05-05,,manual,,,scheduled
+Michigan Consumer Sentiment,2026-05-08,UMCSENT,FRED,,,scheduled
 Michigan Inflation 1Y,2026-05-08,MICH,FRED,,,scheduled
 Michigan Inflation 5Y,2026-05-08,MICH5YF,FRED,,,scheduled
 NFP,2026-05-08,PAYEMS,FRED,,,scheduled
+Conference Board LEI,2026-05-11,USALOLITONOSTSAM,manual,,,scheduled
 Initial Claims 4W MA,2026-05-15,IC4WSA,FRED,,,scheduled
 Building Permits,2026-05-19,PERMIT,FRED,,,scheduled
 Conference Board LEI,2026-05-21,,manual,,,scheduled
@@ -32,6 +37,8 @@ CB Consumer Confidence,2026-05-26,CSCICP03USM665S,FRED,,,scheduled
 ISM Manufacturing PMI,2026-06-01,,manual,,,scheduled
 ISM Non-Manufacturing PMI,2026-06-03,,manual,,,scheduled
 NFP,2026-06-05,PAYEMS,FRED,,,scheduled
+Conference Board LEI,2026-06-08,USALOLITONOSTSAM,manual,,,scheduled
+Michigan Consumer Sentiment,2026-06-12,UMCSENT,FRED,,,scheduled
 Michigan Inflation 1Y,2026-06-12,MICH,FRED,,,scheduled
 Michigan Inflation 5Y,2026-06-12,MICH5YF,FRED,,,scheduled
 Building Permits,2026-06-16,PERMIT,FRED,,,scheduled
