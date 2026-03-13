@@ -150,13 +150,14 @@ INDICATOR_CONFIG = {
         "unit": "%",
         "discord_remind": False,
     },
-    "CB Consumer Confidence": {
-        "fred_id": "CSCICP03USM665S",
+    "Michigan Consumer Sentiment": {
+        "fred_id": "UMCSENT",
         "input_method": "FRED",
         "fred_release_id": None,
-        "slug": "cb_conf",
-        "threshold_bull": 100.0,
-        "threshold_bear": 80.0,
+        "michigan_rule": True,
+        "slug": "mich_sent",
+        "threshold_bull": 90.0,
+        "threshold_bear": 70.0,
         "unit": "index",
         "discord_remind": False,
     },
@@ -309,11 +310,11 @@ def ism_release_dates(months_ahead: int = 3) -> list[tuple[str, date]]:
     return results
 
 
-def cb_consumer_confidence_release_dates(months_ahead: int = 3) -> list[tuple[str, date]]:
+def michigan_consumer_sentiment_release_dates(months_ahead: int = 3) -> list[tuple[str, date]]:
     """
-    CB Consumer Confidence（Conference Board 消費者信頼感指数）の発表予定日。
-    発表スケジュール: 毎月最終火曜日
-    Returns: [("CB Consumer Confidence", release_date), ...]
+    Michigan Consumer Sentiment（ミシガン大学消費者信頼感指数）の発表予定日。
+    発表スケジュール: 毎月第2金曜日（速報値）
+    Returns: [("Michigan Consumer Sentiment", release_date), ...]
     """
     import calendar
     today = date.today()
@@ -322,14 +323,14 @@ def cb_consumer_confidence_release_dates(months_ahead: int = 3) -> list[tuple[st
         year  = today.year + (today.month - 1 + offset) // 12
         month = (today.month - 1 + offset) % 12 + 1
         try:
-            last_day = calendar.monthrange(year, month)[1]
-            last = date(year, month, last_day)
-            delta = (last.weekday() - 1) % 7  # 1=火曜
-            release_date = last - timedelta(days=delta)
-            if release_date >= today:
-                results.append(("CB Consumer Confidence", release_date))
+            # 第2金曜日を算出（weekday=4が金曜）
+            first_day = date(year, month, 1)
+            first_friday = first_day + timedelta(days=(4 - first_day.weekday()) % 7)
+            second_friday = first_friday + timedelta(weeks=1)
+            if second_friday >= today:
+                results.append(("Michigan Consumer Sentiment", second_friday))
         except Exception as e:
-            logger.warning(f"CB Consumer Confidence date calc error: {e}")
+            logger.warning(f"Michigan Consumer Sentiment date calc error: {e}")
     return results
 
 
@@ -536,8 +537,8 @@ def update_schedule(fred_api_key: str, days_ahead: int = 90):
         })
         logger.info(f"[Schedule+] {ind_name}: {date_str} (第3週火曜 ルールベース算出)")
 
-    # CB Consumer Confidence（毎月最終火曜ルール）
-    for ind_name, rd in cb_consumer_confidence_release_dates(months_ahead=3):
+    # Michigan Consumer Sentiment（毎月第2金曜ルール）
+    for ind_name, rd in michigan_consumer_sentiment_release_dates(months_ahead=3):
         date_str = rd.strftime("%Y-%m-%d")
         if (ind_name, date_str) in registered:
             continue
@@ -550,7 +551,7 @@ def update_schedule(fred_api_key: str, days_ahead: int = 90):
             "actual":       "",
             "status":       "scheduled",
         })
-        logger.info(f"[Schedule+] {ind_name}: {date_str} (最終火曜 ルールベース算出)")
+        logger.info(f"[Schedule+] {ind_name}: {date_str} (第2金曜 ルールベース算出)")
 
     # Conference Board LEI（毎月第3木曜ルール）
     for ind_name, rd in cb_lei_release_dates(months_ahead=3):

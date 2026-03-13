@@ -545,7 +545,7 @@ const THRESHOLD = {
   'Initial Claims 4W MA':     { bull:250000, bear:330000, unit:'件'    },
   'Michigan Inflation 1Y':    { bull:null,   bear:null,   unit:'%'     },
   'Michigan Inflation 5Y':    { bull:null,   bear:null,   unit:'%'     },
-  'CB Consumer Confidence':   { bull:100,    bear:80,     unit:'index' },
+  'Michigan Consumer Sentiment': { bull:90,    bear:70,     unit:'index' },
   'Building Permits':         { bull:1400,   bear:1200,   unit:'千件'  },
   'Yield Curve 10Y-2Y':       { bull:0,      bear:0,      unit:'%'     },
   'HY Spread':                { bull:null,   bear:null,   unit:'%'     },
@@ -1040,7 +1040,7 @@ function renderPhaseGauge() {
   const ismNm = latestActual('ISM Non-Manufacturing PMI');
   const claims= latestActual('Initial Claims 4W MA');
   const nfp   = latestActual('NFP');
-  const cbcc  = latestActual('CB Consumer Confidence');
+  const cbcc  = latestActual('Michigan Consumer Sentiment');
   const lei   = latestActual('Conference Board LEI');
   const mich  = latestActual('Michigan Inflation 1Y');
 
@@ -1127,16 +1127,16 @@ function renderPhaseGauge() {
   }
   signals.push({ name:'初回失業申請 4WMA', val:clLabel, score:clScore, signal:clSignal, weight:10, lead:'先行1ヶ月' });
 
-  // 7. CB Consumer Confidence (weight:8)
+  // 7. Michigan Consumer Sentiment (weight:8)
   let cbScore = 50, cbSignal = 'neutral', cbLabel = '—';
   if (cbcc !== null) {
     cbLabel = cbcc.toFixed(1);
-    if      (cbcc < 70)  { cbScore = 82; cbSignal = 'bear'; }
-    else if (cbcc < 90)  { cbScore = 62; cbSignal = 'caution'; }
-    else if (cbcc < 110) { cbScore = 38; cbSignal = 'neutral'; }
+    if      (cbcc < 60)  { cbScore = 82; cbSignal = 'bear'; }
+    else if (cbcc < 75)  { cbScore = 62; cbSignal = 'caution'; }
+    else if (cbcc < 90)  { cbScore = 38; cbSignal = 'neutral'; }
     else                 { cbScore = 15; cbSignal = 'bull'; }
   }
-  signals.push({ name:'CB消費者信頼感', val:cbLabel, score:cbScore, signal:cbSignal, weight:8, lead:'先行2ヶ月' });
+  signals.push({ name:'ミシガン消費者信頼感', val:cbLabel, score:cbScore, signal:cbSignal, weight:8, lead:'先行2ヶ月' });
 
   // 8. Conference Board LEI (weight:7)
   let leiScore = 50, leiSignal = 'neutral', leiLabel = '—';
