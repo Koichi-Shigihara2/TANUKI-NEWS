@@ -944,6 +944,9 @@ def _load_sp500_cache(fred, from_date: str, to_date: str) -> pd.Series:
             s = fred.get_series("SP500", observation_start=from_date, observation_end=to_date)
             if s is not None and not s.empty:
                 s = s.dropna()
+                # タイムゾーンをtz-naiveに正規化（比較エラー対策）
+                if hasattr(s.index, 'tz') and s.index.tz is not None:
+                    s.index = s.index.tz_localize(None)
                 logger.info(f"S&P500 (FRED): {len(s)} obs")
                 return s
         except Exception as e:
@@ -973,6 +976,11 @@ def _lookup_sp500(cache: pd.Series, target_date: date):
     if cache.empty:
         return None
     td = pd.Timestamp(target_date)
+    # FREDのSP500はUTC付きDatetimeIndexの場合があるためtz-naiveに正規化
+    idx = cache.index
+    if hasattr(idx, 'tz') and idx.tz is not None:
+        idx = idx.tz_localize(None)
+        cache = pd.Series(cache.values, index=idx)
     s = cache[cache.index <= td]
     if s.empty:
         return None
@@ -991,9 +999,12 @@ def fill_returns(fred=None):
 
     today = date.today()
 
-    # 補完が必要な行に絞る
+    # デイリー指標はsp0のみ補完するが、needから除外して期間計算を正確にする
+    DAILY_INDS_SET = {'Yield Curve 10Y-2Y', 'HY Spread', 'VIX', 'Michigan Inflation 5Y'}
+    # 補完が必要な行に絞る（デイリー指標は除外）
     need = events[
         (events["release_date"] != "") &
+        (~events["indicator"].isin(DAILY_INDS_SET)) &
         (
             (events["sp500_t0"] == "") |
             (events["sp500_t1"] == "") |
@@ -1007,10 +1018,12 @@ def fill_returns(fred=None):
         return
 
     # 対象期間を算出（t20補完のため最大+30日余裕）
-    min_date = need["release_date"].min()
+    # min_dateは7日前倒し（元旦・週末等でS&P500休場の場合に前日終値を取得するため）
+    raw_min = pd.to_datetime(need["release_date"].min()).date()
+    min_date = (raw_min - timedelta(days=7)).strftime("%Y-%m-%d")
     max_rd   = pd.to_datetime(need["release_date"].max()).date()
     max_date = min(today, max_rd + timedelta(days=45)).strftime("%Y-%m-%d")
-    logger.info(f"fill-returns: {len(need)} rows need update ({min_date} 〜 {need['release_date'].max()})")
+    logger.info(f"fill-returns: {len(need)} rows need update ({need['release_date'].min()} 〜 {need['release_date'].max()})")
 
     # S&P500 を一括キャッシュ
     sp_cache = _load_sp500_cache(fred, min_date, max_date)
@@ -1019,10 +1032,17 @@ def fill_returns(fred=None):
         return
 
     updated = 0
+    skip_no_sp0 = 0
+    skip_future = 0
+    skip_no_spn = 0
+    first_rows_logged = 0
+    DAILY_INDS = {'Yield Curve 10Y-2Y', 'HY Spread', 'VIX', 'Michigan Inflation 5Y'}
+
     for idx, row in need.iterrows():
         try:
             rd = datetime.strptime(row["release_date"], "%Y-%m-%d").date()
-        except Exception:
+        except Exception as e:
+            logger.warning(f"fill-returns: release_date parse error idx={idx} val={repr(row['release_date'])}: {e}")
             continue
 
         # t0: 発表日当日または直前の終値
@@ -1031,6 +1051,11 @@ def fill_returns(fred=None):
             if sp0:
                 events.at[idx, "sp500_t0"] = str(sp0)
                 updated += 1
+            else:
+                skip_no_sp0 += 1
+                if skip_no_sp0 <= 3:
+                    logger.warning(f"fill-returns: sp0 not found for {row['indicator']} {rd} (cache range: {sp_cache.index.min()} 〜 {sp_cache.index.max()})")
+                continue
 
         t0_str = events.at[idx, "sp500_t0"]
         if not t0_str:
@@ -1038,6 +1063,10 @@ def fill_returns(fred=None):
         try:
             t0_val = float(t0_str)
         except (ValueError, TypeError):
+            continue
+
+        # デイリー指標はt1〜t20補完不要（コンテキスト用途のためsp0のみ）
+        if row.get("indicator", "") in DAILY_INDS:
             continue
 
         # t1/t5/t10/t20
@@ -1050,15 +1079,19 @@ def fill_returns(fred=None):
             if events.at[idx, col_sp]:
                 continue
             target_n = us_business_days_add(rd, n)
-            if target_n > today:
+            if target_n > today:  # todayを含まない（当日終値は翌朝確定）
+                skip_future += 1
                 continue
             sp_n = _lookup_sp500(sp_cache, target_n)
             if sp_n is None:
+                skip_no_spn += 1
                 continue
             ret_n = round((sp_n - t0_val) / t0_val * 100, 4)
             events.at[idx, col_sp]  = str(sp_n)
             events.at[idx, col_ret] = str(ret_n)
             updated += 1
+
+    logger.info(f"fill-returns stats: skip_no_sp0={skip_no_sp0} skip_future={skip_future} skip_no_spn={skip_no_spn}")
 
     if updated:
         save_events(events)

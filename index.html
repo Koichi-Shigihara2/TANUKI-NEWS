@@ -45,13 +45,6 @@
     .ntag  {font-family:var(--mono);font-size:10px;white-space:nowrap;padding-top:2px}
     .n-ok .ntag{color:var(--grn)} .n-warn .ntag{color:var(--amb)} .n-info .ntag{color:var(--acc)}
 
-    /* ── Recalc banner ── */
-    .rbanner{background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);border-left:3px solid var(--acc);padding:10px 16px;margin-bottom:14px;display:none;align-items:center;justify-content:space-between;gap:12px}
-    .rbanner.on{display:flex}
-    .rbmsg{font-size:12px;color:#94a3b8}
-    .rbmsg strong{color:var(--acc);font-family:var(--mono)}
-    .btn-rc{font-family:var(--mono);font-size:11px;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.4);color:var(--acc);padding:6px 14px;cursor:pointer;transition:all .2s}
-    .btn-rc:hover{background:rgba(59,130,246,.28)}
 
     /* ── Ticker ── */
     .ticker{background:var(--sur);border:1px solid var(--bdr);border-left:3px solid var(--acc);padding:12px 20px;display:flex;gap:28px;margin-bottom:22px;overflow-x:auto;scrollbar-width:none}
@@ -90,6 +83,22 @@
     .bg-m{background:rgba(100,116,139,.1);color:var(--mut);border:1px solid rgba(100,116,139,.2)}
     .bg-b{background:rgba(59,130,246,.1);color:var(--acc);border:1px solid rgba(59,130,246,.2)}
 
+    /* ── Composite Chart ── */
+    .cmp-ctrl{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+    .cmp-ctrl label{font-family:var(--mono);font-size:10px;color:var(--mut);letter-spacing:.06em}
+    .cmp-forecast-badge{font-family:var(--mono);font-size:10px;padding:2px 8px;background:rgba(167,139,250,.15);border:1px solid rgba(167,139,250,.35);color:#a78bfa;border-radius:2px}
+    .scn-panel{margin-top:12px;padding:10px 14px;background:var(--sur2);border:1px solid var(--bdr)}
+    .scn-title{font-family:var(--mono);font-size:10px;color:var(--mut);letter-spacing:.08em;margin-bottom:8px}
+    .scn-rows{display:flex;flex-direction:column;gap:6px}
+    .scn-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .scn-lbl{font-family:var(--mono);font-size:10px;color:var(--mut);width:22px;flex-shrink:0}
+    .scn-sel{background:var(--sur2);border:1px solid var(--bdr);color:var(--fg);font-family:var(--mono);font-size:11px;padding:3px 6px;min-width:180px}
+    .scn-inp{background:var(--sur2);border:1px solid var(--bdr);color:var(--fg);font-family:var(--mono);font-size:11px;padding:3px 6px;width:90px;text-align:right}
+    .scn-inp::placeholder{color:var(--mut)}
+    .scn-hint{font-family:var(--mono);font-size:10px;color:var(--mut)}
+    .scn-badge{font-family:var(--mono);font-size:10px;padding:2px 8px;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);color:#10b981;border-radius:2px}
+    .scn-stats{font-family:var(--mono);font-size:10px;color:var(--mut);margin-top:6px;line-height:1.6}
+
     /* ── Pattern DB ── */
     .pdb-form{margin-bottom:16px}
     .pdb-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px;align-items:flex-end}
@@ -118,19 +127,13 @@
     .ic-date{font-family:var(--mono);font-size:10px;color:var(--mut);margin-bottom:12px}
 
     /* ── Forecast area ── */
-    .fc-area{border-top:1px solid var(--bdr);padding-top:12px}
-    .fc-lbl{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--mut);margin-bottom:6px;display:flex;align-items:center;gap:6px}
     .stag{font-size:9px;padding:1px 5px;border-radius:2px;font-family:var(--mono)}
     .s-aaf{background:rgba(100,116,139,.15);color:var(--mut)}
     .s-usr{background:rgba(59,130,246,.15);color:var(--acc)}
     .s-ret{background:rgba(16,185,129,.15);color:var(--grn)}
     .s-non{background:rgba(100,116,139,.1);color:var(--mut)}
     .fc-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
-    .fc-inp{font-family:var(--mono);font-size:13px;background:var(--sur2);border:1px solid var(--bdr);color:var(--txt);padding:6px 10px;flex:1;outline:none;transition:border-color .2s;min-width:0}
-    .fc-inp:focus{border-color:var(--acc)}
-    .fc-inp.filled{border-color:rgba(59,130,246,.5)}
-    .btn-sv{font-family:var(--mono);font-size:10px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);color:var(--acc);padding:6px 12px;cursor:pointer;white-space:nowrap;transition:all .2s}
-    .btn-sv:hover{background:rgba(59,130,246,.22)}
+
     .fc-res{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
     .surp{font-family:var(--mono);font-size:13px;font-weight:700}
     .surp-aaf{color:var(--mut)}
@@ -182,14 +185,55 @@
     .rg-tightening{background:rgba(239,68,68,.18);color:#f87171}
     .rg-balanced{background:rgba(156,163,175,.18);color:#9ca3af}
 
+    /* ── Phase Gauge ── */
+    .phase-gauge{border:1px solid var(--bdr);margin-bottom:14px;overflow:hidden;position:relative;background:var(--sur)}
+    .phase-gauge::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,var(--acc) 0%,transparent 60%)}
+    .pg-top{display:flex;align-items:stretch;gap:0}
+    .pg-phase-block{padding:14px 20px;display:flex;flex-direction:column;justify-content:center;gap:4px;min-width:220px;border-right:1px solid var(--bdr)}
+    .pg-phase-label{font-family:var(--mono);font-size:9px;letter-spacing:.15em;color:var(--mut);text-transform:uppercase}
+    .pg-phase-badge{font-family:var(--mono);font-size:22px;font-weight:700;letter-spacing:.04em;line-height:1}
+    .pg-phase-sub{font-size:10px;color:var(--mut);margin-top:2px}
+    .pg-track-block{flex:1;padding:14px 20px;display:flex;flex-direction:column;justify-content:center;gap:8px}
+    .pg-track-label{font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--mut);text-transform:uppercase;display:flex;justify-content:space-between}
+    .pg-track{position:relative;height:8px;background:var(--sur2);border:1px solid var(--bdr);border-radius:2px;overflow:visible}
+    .pg-track-fill{height:100%;border-radius:2px;transition:width .6s ease}
+    .pg-track-marker{position:absolute;top:-4px;width:3px;height:16px;background:var(--txt);border-radius:1px;transition:left .6s ease}
+    .pg-signals{padding:0 20px 14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}
+    .pg-sig{display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--bdr);background:var(--sur2)}
+    .pg-sig-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .pg-sig-name{font-family:var(--mono);font-size:10px;color:var(--mut);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .pg-sig-val{font-family:var(--mono);font-size:11px;font-weight:700}
+    .pg-sig-badge{font-family:var(--mono);font-size:9px;padding:1px 6px;border-radius:2px}
+    .pg-score-block{padding:14px 16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-left:1px solid var(--bdr);min-width:100px}
+    .pg-score-num{font-family:var(--mono);font-size:28px;font-weight:700;line-height:1}
+    .pg-score-label{font-family:var(--mono);font-size:9px;color:var(--mut);letter-spacing:.1em;text-align:center}
+    .pg-alert{margin:0 0 0;padding:8px 20px;font-family:var(--mono);font-size:10px;border-top:1px solid var(--bdr);display:none;gap:8px;align-items:flex-start;line-height:1.6}
+    /* phase colors */
+    .phase-expand  {color:var(--grn)}
+    .phase-plateau {color:var(--acc)}
+    .phase-edge    {color:var(--amb)}
+    .phase-recession{color:var(--red)}
+
     /* ── Schedule Panel ── */
-    .sched-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-top:8px}
-    .sched-item{background:var(--sur2);border:1px solid var(--bdr);padding:10px 12px;position:relative;overflow:hidden}
-    .sched-item.past{opacity:.45}
-    .sched-item.today{border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)}
-    .sched-item.upcoming{border-color:rgba(99,102,241,.4)}
-    .si-date{font-family:var(--mono);font-size:10px;color:var(--mut);margin-bottom:4px}
-    .si-name{font-size:11px;font-weight:600;line-height:1.3;color:var(--txt)}
+    /* スケジュール: コンパクトテーブル型 */
+    .sched-table{width:100%;border-collapse:collapse}
+    .sched-table th{font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--mut);text-align:left;padding:6px 10px;border-bottom:1px solid var(--bdr);text-transform:uppercase}
+    .sched-table td{padding:6px 10px;border-bottom:1px solid rgba(30,40,64,.5);font-size:12px;vertical-align:middle}
+    .sched-table tr:last-child td{border-bottom:none}
+    .sched-table tr.s-past{opacity:.4}
+    .sched-table tr.s-today td:first-child{border-left:2px solid var(--acc)}
+    .sched-table tr.s-today{background:rgba(59,130,246,.04)}
+    .sched-table tr:not(.s-past):hover{background:rgba(255,255,255,.02)}
+    .si-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:6px;vertical-align:middle;flex-shrink:0}
+    .si-dot.done{background:#10b981}
+    .si-dot.soon{background:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.2)}
+    .si-dot.future{background:var(--bdr)}
+    .si-days-tag{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:2px}
+    .si-days-tag.today{background:rgba(59,130,246,.15);color:var(--acc)}
+    .si-days-tag.soon{background:rgba(245,158,11,.12);color:var(--amb)}
+    .si-days-tag.past{color:var(--mut)}
+    .si-days-tag.future{color:var(--mut)}
+    .si-act-val{font-family:var(--mono);font-size:11px;color:var(--txt)}
     .si-days{font-family:var(--mono);font-size:10px;margin-top:4px}
     .si-act{font-family:var(--mono);font-size:11px;font-weight:700;margin-top:4px}
     .si-dot{width:6px;height:6px;border-radius:50%;position:absolute;top:10px;right:10px}
@@ -206,18 +250,13 @@
     <div class="logo"><span class="logo-dot"></span>MACRO PULSE</div>
     <div class="hdr-r">
       <span class="ts" id="ts">--</span>
-      <button class="btn" onclick="exportForecasts()">↓ 予想CSV</button>
-      <button class="btn btn-w" onclick="loadDemoData()">DEMO</button>
       <button class="btn btn-p" onclick="loadCSVData()">↻ 更新</button>
     </div>
   </header>
 
   <!-- Notices -->
   <div id="notice" class="notice"><span class="ntag" id="ntag">INFO</span><span id="nmsg"></span></div>
-  <div id="rbanner" class="rbanner">
-    <span class="rbmsg"><strong id="rcount">0</strong> 件の予想値が変更されました — Surprise を再計算できます</span>
-    <button class="btn-rc" onclick="runRecalc()">↺ 再計算実行</button>
-  </div>
+
 
   <!-- Regime Bar (fed_context.csv) -->
   <div class="regime-bar" id="regimeBar">
@@ -226,6 +265,42 @@
     <div class="rb-cell"><span class="rb-label">1Y EXPECTED FF</span><span class="rb-val" id="rb-exp">—</span><span class="rb-sub" id="rb-src">FRED T1YFF</span></div>
     <div class="rb-cell"><span class="rb-label">IMPLIED CUTS</span><span class="rb-val" id="rb-cuts">—</span><span class="rb-sub">12M / 25bp each</span></div>
     <div class="rb-cell"><span class="rb-label">FRB 主眼</span><span class="rb-val" id="rb-concern">—</span><span class="rb-sub" id="rb-reason" style="font-size:9px;line-height:1.4;white-space:normal;max-width:200px">—</span></div>
+  </div>
+
+  <!-- Phase Gauge -->
+  <div class="phase-gauge" id="phaseGauge">
+    <div class="pg-top">
+      <div class="pg-phase-block">
+        <span class="pg-phase-label">景気フェーズ判定</span>
+        <span class="pg-phase-badge" id="pg-phase-badge">—</span>
+        <span class="pg-phase-sub" id="pg-phase-sub">—</span>
+      </div>
+      <div class="pg-track-block">
+        <div class="pg-track-label">
+          <span style="color:var(--grn)">拡張</span>
+          <span style="color:var(--acc)">踊り場</span>
+          <span style="color:var(--amb)">後退入口</span>
+          <span style="color:var(--red)">後退</span>
+        </div>
+        <div class="pg-track" id="pg-track">
+          <div class="pg-track-fill" id="pg-track-fill" style="width:0%"></div>
+          <div class="pg-track-marker" id="pg-track-marker" style="left:0%"></div>
+        </div>
+        <div style="font-family:var(--mono);font-size:9px;color:var(--mut);display:flex;justify-content:space-between">
+          <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
+        </div>
+        <div id="pg-signal-text" style="font-family:var(--mono);font-size:10px;color:var(--mut);margin-top:2px"></div>
+      </div>
+      <div class="pg-score-block">
+        <span class="pg-score-num" id="pg-score-num">—</span>
+        <span class="pg-score-label">RECESSION<br>RISK SCORE</span>
+      </div>
+    </div>
+    <div class="pg-signals" id="pg-signals"></div>
+    <div class="pg-alert" id="pg-alert">
+      <span style="color:var(--amb);font-family:var(--mono)">⚠ ALERT</span>
+      <span id="pg-alert-msg"></span>
+    </div>
   </div>
 
   <!-- Ticker -->
@@ -238,59 +313,84 @@
     <div class="tsep"></div>
     <div class="tick"><span class="tl">VIX</span><span class="tv" id="tk-vx">—</span><span class="ts2 neu">fear index</span></div>
     <div class="tsep"></div>
-    <div class="tick"><span class="tl">予想入力率</span><span class="tv" id="tk-fc">—</span><span class="ts2 neu">forecast coverage</span></div>
+    <div class="tick"><span class="tl">DATA COVERAGE</span><span class="tv" id="tk-fc">—</span><span class="ts2 neu">rows with actual</span></div>
     <div class="tsep"></div>
     <div class="tick"><span class="tl">LAST UPDATE</span><span class="tv" style="font-size:13px" id="tk-last">—</span><span class="ts2 neu" id="tk-src">—</span></div>
   </div>
 
-  <!-- Schedule Panel (indicator_schedule.csv) -->
+  <!-- Schedule + 金融環境スナップショット -->
   <div class="sec">UPCOMING RELEASES</div>
   <div class="panel" style="margin-bottom:18px">
+    <!-- 金融環境スナップショット（直近値） -->
+    <div id="envSnap" style="display:flex;gap:0;border-bottom:1px solid var(--bdr);margin-bottom:14px;padding-bottom:12px;flex-wrap:wrap;gap:6px"></div>
+    <!-- スケジュール -->
     <div class="sched-grid" id="schedGrid"><div class="empty"><span class="spin"></span></div></div>
   </div>
 
-  <!-- KPIs -->
-  <div class="sec">SURPRISE SCORECARD</div>
-  <div class="g4">
-    <div class="panel"><div class="ptitle">BEAT (予想あり)</div><div class="kval up" id="k-beat">—</div><div class="klbl">実際値が予想を上回った件数</div><span class="badge bg-g" id="k-beat-b">—</span></div>
-    <div class="panel"><div class="ptitle">MISS (予想あり)</div><div class="kval dn" id="k-miss">—</div><div class="klbl">実際値が予想を下回った件数</div><span class="badge bg-r" id="k-miss-b">—</span></div>
-    <div class="panel"><div class="ptitle">自動代替 (予想なし)</div><div class="kval neu" id="k-nof">—</div><div class="klbl">予想未入力 → 実績=予想で処理</div><span class="badge bg-m">actual_as_forecast</span></div>
-    <div class="panel"><div class="ptitle">方向一致率</div><div class="kval" id="k-acc">—</div><div class="klbl">前回比方向を正しく予想した率</div><span class="badge bg-b" id="k-acc-n">—</span></div>
-  </div>
+
 
   <!-- Indicator Cards -->
-  <div class="sec">LATEST READINGS &amp; 予想入力</div>
+  <div class="sec">LATEST READINGS</div>
   <div class="ig" id="indGrid"><div class="empty"><span class="spin"></span><br><br>Loading...</div></div>
 
-  <!-- Charts -->
-  <div class="sec">MARKET CORRELATION</div>
-  <div class="g2">
-    <div class="panel"><div class="ptitle">S&amp;P 500 &amp; NASDAQ 推移</div><div class="cwl" id="chPrices"></div></div>
-    <div class="panel">
-      <div class="ptitle">指標別トレンド（閾値ライン付き）</div>
-      <select class="fsel" id="trendSel" onchange="renderTrendChart()" style="margin-bottom:10px"></select>
-      <div class="cw" id="chTrend"></div>
-    </div>
-  </div>
-  <div class="g2" style="margin-bottom:18px">
-    <div class="panel"><div class="ptitle">YIELD CURVE 10Y−2Y</div><div class="cw" id="chYC"></div></div>
-    <div class="panel"><div class="ptitle">SURPRISE HISTORY (予想入力ありのみ)</div><div class="cw" id="chSurp"></div></div>
-  </div>
 
-  <!-- Forecast Tracking -->
-  <div class="sec">予想トラッキング</div>
+
+
+
+  <!-- Composite Chart -->
+  <div class="sec">MARKET VIEW</div>
   <div class="panel" style="margin-bottom:18px">
-    <div class="tr-sum">
-      <div class="tr-k"><span class="tr-kv" id="tr-n">—</span><span class="tr-kl">予想入力件数</span></div>
-      <div class="tr-k"><span class="tr-kv up" id="tr-dir">—</span><span class="tr-kl">方向一致率</span></div>
-      <div class="tr-k"><span class="tr-kv" id="tr-mae">—</span><span class="tr-kl">平均絶対乖離</span></div>
-      <div class="tr-k"><span class="tr-kv neu" id="tr-nof">—</span><span class="tr-kl">自動代替件数</span></div>
+    <div class="cmp-ctrl">
+      <label>指標</label>
+      <select class="fsel" id="cmpIndSel" onchange="renderCmp()">
+        <option value="">— 指標を選択 —</option>
+      </select>
+      <label style="margin-left:8px">期間</label>
+      <select class="fsel" id="cmpRange" onchange="renderCmp()">
+        <option value="3" selected>3ヶ月</option>
+        <option value="6">6ヶ月</option>
+        <option value="12">12ヶ月</option>
+        <option value="24">24ヶ月</option>
+        <option value="0">全期間</option>
+      </select>
+      <label style="margin-left:8px">
+        <input type="checkbox" id="cmpShowYC"  checked onchange="renderCmp()"> YC
+      </label>
+      <label>
+        <input type="checkbox" id="cmpShowHY"  onchange="renderCmp()"> HY
+      </label>
+      <label>
+        <input type="checkbox" id="cmpShowVIX" onchange="renderCmp()"> VIX
+      </label>
+      <span class="cmp-forecast-badge" id="cmpFcBadge" style="display:none">▶ PATTERN DB 予測延長中</span>
     </div>
-    <div class="tw">
-      <table>
-        <thead><tr><th>日付</th><th>指標名</th><th>実際値</th><th>自分の予想</th><th>乖離</th><th>方向一致</th><th>種別</th><th>翌日S&amp;P変化</th></tr></thead>
-        <tbody id="trackBody"><tr><td colspan="8" class="empty"><span class="spin"></span></td></tr></tbody>
-      </table>
+    <div style="height:340px" id="chCmp"></div>
+    <div style="font-family:var(--mono);font-size:10px;color:var(--mut);margin-top:6px" id="cmpStats"></div>
+
+    <!-- シナリオ予測パネル -->
+    <div class="scn-panel">
+      <div class="scn-title">▶ シナリオ予測 — 今後の発表をコンセンサスで想定した場合の株価インパクト（今日起点）</div>
+      <div class="scn-rows">
+        <div class="scn-row">
+          <span class="scn-lbl">①</span>
+          <select class="scn-sel" id="scnInd0" onchange="renderScenario()"><option value="">— 指標を選択 —</option></select>
+          <input  class="scn-inp" id="scnVal0" type="number" step="any" placeholder="consensus" oninput="renderScenario()">
+          <span class="scn-hint" id="scnHint0"></span>
+        </div>
+        <div class="scn-row">
+          <span class="scn-lbl">②</span>
+          <select class="scn-sel" id="scnInd1" onchange="renderScenario()"><option value="">— 指標を選択 —</option></select>
+          <input  class="scn-inp" id="scnVal1" type="number" step="any" placeholder="consensus" oninput="renderScenario()">
+          <span class="scn-hint" id="scnHint1"></span>
+        </div>
+        <div class="scn-row">
+          <span class="scn-lbl">③</span>
+          <select class="scn-sel" id="scnInd2" onchange="renderScenario()"><option value="">— 指標を選択 —</option></select>
+          <input  class="scn-inp" id="scnVal2" type="number" step="any" placeholder="consensus" oninput="renderScenario()">
+          <span class="scn-hint" id="scnHint2"></span>
+        </div>
+      </div>
+      <div class="scn-stats" id="scnStats"></div>
     </div>
   </div>
 
@@ -404,7 +504,6 @@
 // ═══════════════════════════════════════════════════════
 // CONFIG & STATE
 // ═══════════════════════════════════════════════════════
-const LS_KEY = 'macropulse_forecasts_v6';
 const CSV_PATHS     = ['data/05_events.csv'];
 const FED_CTX_PATH  = 'data/05_fed_context.csv';
 const SCHED_PATH    = 'data/05_indicator_schedule.csv';
@@ -456,7 +555,6 @@ const THRESHOLD = {
 let DATA = [];           // applyForecasts 後のアクティブデータ
 let RAW  = [];           // CSV から読んだ生データ
 let CHARTS = {};
-let pendingRecalc = 0;
 
 // ═══════════════════════════════════════════════════════
 // UTILS
@@ -492,102 +590,21 @@ function srcTag(src) {
 }
 
 // ═══════════════════════════════════════════════════════
-// localStorage 予想管理
+// データ適用（予想機能なし・CSVをそのまま使用）
 // ═══════════════════════════════════════════════════════
-function allFC()           { try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); } catch { return {}; } }
-function getFC(ind, dt)    { return allFC()[`${ind}_${dt}`]; }
-function setFC(ind, dt, v, retro) {
-  const all = allFC();
-  all[`${ind}_${dt}`] = { forecast: v, savedAt: new Date().toISOString(), retroactive: retro };
-  localStorage.setItem(LS_KEY, JSON.stringify(all));
-}
-
-// ═══════════════════════════════════════════════════════
-// 予想適用 & フォールバック（ブラウザ完結）
-// ═══════════════════════════════════════════════════════
-/**
- * 各行に対し:
- *  - 実際値なし         → 入力欄のみ表示（発表前）
- *  - localStorage に予想あり → Surprise 再計算, src = user / user_retroactive
- *  - localStorage に予想なし && CSV に期待値なし → actual_as_forecast (Surprise=0)
- *  - CSV に既存の期待値あり  → そのまま使用
- */
 function applyForecasts(rows) {
-  const fc = allFC();
   return rows.map(r => {
     const clone  = { ...r };
     const actual = n(r[COL.actual]);
-
-    if (actual === null) return clone;   // 発表前
-
-    const key   = `${r[COL.indicator]}_${r[COL.date]}`;
-    const saved = fc[key];
-
-    if (saved && saved.forecast !== undefined && String(saved.forecast).trim() !== '') {
-      const fv = parseFloat(saved.forecast);
-      if (!isNaN(fv)) {
-        clone[COL.consensus] = fv;
-        clone[COL.surprise]  = r4(actual - fv);
-        clone[COL.src]       = saved.retroactive ? 'user_retroactive' : 'user';
-        return clone;
-      }
+    if (actual !== null && n(r[COL.consensus]) === null) {
+      clone[COL.consensus] = actual;
+      clone[COL.surprise]  = 0;
+      clone[COL.src]       = 'actual_as_forecast';
     }
-
-    // CSV に既存の consensus がある場合はそれを維持
-    const csvFV  = n(r[COL.consensus]);
-    const csvSrc = String(r[COL.src] || '').trim();
-    if (csvFV !== null && csvSrc && csvSrc !== 'none' && csvSrc !== 'actual_as_forecast') {
-      return clone;
-    }
-
-    // フォールバック: 実績=予想 (Surprise=0, グレー表示)
-    clone[COL.consensus] = actual;
-    clone[COL.surprise]  = 0;
-    clone[COL.src]       = 'actual_as_forecast';
     return clone;
   });
 }
 
-// ═══════════════════════════════════════════════════════
-// 再計算（ブラウザ完結）
-// ═══════════════════════════════════════════════════════
-function runRecalc() {
-  DATA = applyForecasts(RAW);
-  pendingRecalc = 0;
-  el('rbanner').classList.remove('on');
-  render();
-  showNotice('再計算完了。すべての Surprise を更新しました。', 'ok');
-}
-
-// ═══════════════════════════════════════════════════════
-// 予想保存
-// ═══════════════════════════════════════════════════════
-function saveFC(ind, dt) {
-  const inputId = `fci-${ind.replace(/[\s()%]/g, '_')}`;
-  const input   = el(inputId);
-  if (!input) return;
-  const val = parseFloat(input.value);
-  if (isNaN(val)) { showNotice('有効な数値を入力してください。', 'warn'); return; }
-
-  // 発表後の入力か判定
-  const csvRow = RAW.find(r => r[COL.indicator] === ind && r[COL.date] === dt);
-  const retro  = !!(csvRow && n(csvRow[COL.actual]) !== null);
-  setFC(ind, dt, val, retro);
-
-  if (retro) {
-    pendingRecalc++;
-    el('rcount').textContent = pendingRecalc;
-    el('rbanner').classList.add('on');
-  }
-
-  // 即時 UI 更新（再計算バナーを押さなくても保存直後に反映）
-  DATA = applyForecasts(RAW);
-  renderCards();
-  updateKPIs();
-  renderTracking();
-  renderSurpChart();
-  showNotice(`「${ind}」の予想 ${val} を保存しました。${retro ? '（事後入力 — 再計算バナーで一括更新可）' : ''}`, 'ok');
-}
 
 // ═══════════════════════════════════════════════════════
 // CSV 読み込み
@@ -699,11 +716,16 @@ async function loadSchedule() {
 
 function renderSchedule(rows) {
   const today = new Date(); today.setHours(0,0,0,0);
-  const cutOld = new Date(today); cutOld.setDate(cutOld.getDate() - 30);
+  const cutOld = new Date(today); cutOld.setDate(cutOld.getDate() - 14);
   const cutFut = new Date(today); cutFut.setDate(cutFut.getDate() + 90);
+  const SCHED_EXCLUDE = new Set(['Yield Curve 10Y-2Y','HY Spread','VIX','Michigan Inflation 5Y']);
 
   const visible = rows
-    .filter(r => r['release_date'] || r['発表予定日'])
+    .filter(r => {
+      const dateStr = r['release_date'] || r['発表予定日'];
+      const name    = r['indicator']    || r['指標名'] || '';
+      return !!dateStr && !SCHED_EXCLUDE.has(name);
+    })
     .map(r => {
       const dateStr = r['release_date'] || r['発表予定日'];
       const d = new Date(dateStr); d.setHours(0,0,0,0);
@@ -717,37 +739,47 @@ function renderSchedule(rows) {
     return;
   }
 
-  const html = visible.map(r => {
-    const d    = r._date;
+  const rows_html = visible.map(r => {
+    const d        = r._date;
     const isPast   = d < today;
     const isToday  = d.getTime() === today.getTime();
     const diffDays = Math.round((d - today) / 86400000);
     const hasAct   = r.actual && r.actual.trim() !== '';
     const indName  = r['indicator'] || r['指標名'] || '—';
 
-    const cls  = isPast ? 'past' : isToday ? 'today' : 'upcoming';
-    const dot  = hasAct ? 'done' : (diffDays <= 3 ? 'soon' : 'future');
-    const dstr = d.toLocaleDateString('ja-JP', { month:'short', day:'numeric', weekday:'short' });
-    const daysLabel = isPast
-      ? `${Math.abs(diffDays)}日前`
-      : isToday ? '本日'
-      : `${diffDays}日後`;
+    const trCls  = isPast ? 's-past' : isToday ? 's-today' : '';
+    const dot    = hasAct ? 'done' : (diffDays <= 3 ? 'soon' : 'future');
+    const dstr   = d.toLocaleDateString('ja-JP', { month:'numeric', day:'numeric', weekday:'short' });
 
-    const actHtml = hasAct
-      ? `<div class="si-act ${parseFloat(r.actual) > 0 ? 'up' : ''}">${r.actual}</div>`
-      : '';
+    let daysTag;
+    if (isToday)      daysTag = `<span class="si-days-tag today">TODAY</span>`;
+    else if (isPast)  daysTag = `<span class="si-days-tag past">${Math.abs(diffDays)}d ago</span>`;
+    else if (diffDays <= 3) daysTag = `<span class="si-days-tag soon">+${diffDays}d</span>`;
+    else              daysTag = `<span class="si-days-tag future">+${diffDays}d</span>`;
 
-    return `<div class="sched-item ${cls} fi">
-      <div class="si-dot ${dot}"></div>
-      <div class="si-date">${dstr}</div>
-      <div class="si-name">${indName}</div>
-      <div class="si-days ${isPast ? 'neu' : 'up'}">${daysLabel}</div>
-      ${actHtml}
-    </div>`;
+    const cons    = r.consensus && r.consensus.trim() !== '' ? r.consensus.trim() : null;
+    const consCell = cons
+      ? `<span class="si-act-val" style="color:var(--acc)">${cons}</span>`
+      : `<span style="color:var(--mut);font-size:11px">—</span>`;
+    const actCell = hasAct
+      ? `<span class="si-act-val ${parseFloat(r.actual) > (parseFloat(cons)||0) ? 'up' : hasAct && cons ? 'dn' : ''}">${r.actual}</span>`
+      : `<span style="color:var(--mut);font-size:11px">—</span>`;
+
+    return `<tr class="${trCls}">
+      <td style="font-family:var(--mono);font-size:11px;color:var(--mut);white-space:nowrap">${dstr}</td>
+      <td><span class="si-dot ${dot}"></span>${indName}</td>
+      <td>${daysTag}</td>
+      <td style="text-align:right">${consCell}</td>
+      <td style="text-align:right">${actCell}</td>
+    </tr>`;
   }).join('');
 
-  el('schedGrid').innerHTML = html;
+  el('schedGrid').innerHTML = `<table class="sched-table">
+    <thead><tr><th>DATE</th><th>INDICATOR</th><th>DAYS</th><th style="text-align:right">CONSENSUS</th><th style="text-align:right">ACTUAL</th></tr></thead>
+    <tbody>${rows_html}</tbody>
+  </table>`;
 }
+
 
 async function loadCSVData() {
   for (const path of CSV_PATHS) {
@@ -771,87 +803,17 @@ async function loadCSVData() {
 // ═══════════════════════════════════════════════════════
 // Demo データ生成
 // ═══════════════════════════════════════════════════════
-function loadDemoData() {
-  RAW  = genDemo();
-  DATA = applyForecasts(RAW);
-  showNotice('DEMOデータ表示中。実データは data/05_events.csv から自動ロードされます。', 'warn');
-  render();
-}
-
-function genDemo() {
-  const rows = [], base = new Date('2025-10-01');
-  const sp  = [5700,5720,5680,5750,5800,5770,5820,5790,5850,5900,5870,5920,5950,5930,5960];
-  const nq  = [19500,19600,19480,19700,19800,19750,19850,19820,19900,20000,19980,20100,20200,20150,20250];
-  const yc  = [0.38,0.40,0.42,0.45,0.43,0.46,0.48,0.50,0.52,0.49,0.51,0.53,0.55,0.58,0.56];
-  const inds = [
-    { name:'ISM Manufacturing PMI',       vals:[48.3,48.7,49.1,49.8,50.2], prevs:[47.8,48.3,48.7,49.1,49.8], period:28 },
-    { name:'Initial Jobless Claims',       vals:[221000,218000,225000,213000,220000], prevs:[225000,221000,218000,225000,213000], period:7 },
-    { name:'Michigan Consumer Sentiment',  vals:[72.4,73.0,70.5,74.2,75.1], prevs:[71.1,72.4,73.0,70.5,74.2], period:28 },
-    { name:'New Residential Starts',       vals:[1360,1420,1380,1450,1480], prevs:[1320,1360,1420,1380,1450], period:28 },
-    { name:'Durable Goods Orders',         vals:[-0.8,1.2,-0.3,0.9,2.1], prevs:[1.1,-0.8,1.2,-0.3,0.9], period:28 },
-  ];
-  inds.forEach(ind => {
-    ind.vals.forEach((v, i) => {
-      const d = new Date(base);
-      d.setDate(d.getDate() + i * ind.period + (ind.name.includes('Claims') ? i * 2 : 0));
-      const di   = Math.min(Math.floor(i * sp.length / ind.vals.length), sp.length - 1);
-      // 奇数インデックス = user予想あり
-      const hasU = i % 2 === 1;
-      const prev = ind.prevs[i];
-      let fv = v, surp = 0, src = 'actual_as_forecast';
-      if (hasU) {
-        const noise = (Math.random() - 0.45) * (ind.name.includes('Claims') ? 4000 : 1.2);
-        fv   = parseFloat((v + noise).toFixed(ind.name.includes('Claims') ? 0 : 1));
-        surp = r4(v - fv);
-        src  = 'user';
-      }
-      rows.push({
-        '指標名': ind.name, 'リリース日': d.toISOString().slice(0, 10),
-        '実際値': v, '期待値(Consensus)': fv, '前回値': prev,
-        'Surprise(実際-期待)': surp, 'forecast_source': src,
-        'YoY変化(%)': ((Math.random() - 0.3) * 5).toFixed(2),
-        'S&P500': sp[di], 'Nasdaq': nq[di], '10Y-2Y(YieldCurve)': yc[di],
-        '付随データ': '{}',
-        '市場反応(自動生成)': src === 'actual_as_forecast'
-          ? 'No forecast (actual used)'
-          : surp > 0 ? `Positive surprise (+${surp})` : `Negative surprise (${surp})`,
-        'データソース': 'FRED/Demo',
-        '更新日時': d.toISOString().slice(0, 10) + ' 07:00:00',
-      });
-    });
-  });
-  // No Indicators
-  for (let i = 0; i < 10; i++) {
-    const d = new Date(base); d.setDate(d.getDate() + i * 5 + 1);
-    const di = Math.min(i, sp.length - 1);
-    rows.push({ '指標名': 'No Indicators', 'リリース日': d.toISOString().slice(0, 10),
-      'S&P500': sp[di], 'Nasdaq': nq[di], '10Y-2Y(YieldCurve)': yc[di],
-      '付随データ': '{}', 'forecast_source': 'none' });
-  }
-  // Yield Curve
-  for (let i = 0; i < 15; i++) {
-    const d = new Date(base); d.setDate(d.getDate() + i * 3);
-    const di = Math.min(i, yc.length - 1);
-    rows.push({ '指標名': 'Yield Curve 10Y-2Y', 'リリース日': d.toISOString().slice(0, 10),
-      '実際値': yc[di], 'S&P500': sp[di], 'Nasdaq': nq[di], '10Y-2Y(YieldCurve)': yc[di],
-      '付随データ': '{}', 'forecast_source': 'none', 'データソース': 'FRED T10Y2Y' });
-  }
-  return rows.sort((a, b) => new Date(a['リリース日']) - new Date(b['リリース日']));
-}
-
-// ═══════════════════════════════════════════════════════
 // RENDER
 // ═══════════════════════════════════════════════════════
 function render() {
   updateTs();
   updateTicker();
-  updateKPIs();
+  renderPhaseGauge();
+  renderEnvSnap();
   renderCards();
-  renderPricesChart();
-  renderYCChart();
-  renderSurpChart();
-  renderTrendSel();
-  renderTracking();
+  cmpPopulate();
+  renderCmp();
+  scnPopulate();
   populateFilters();
   renderTable();
   pdbPopulateIndicators();
@@ -911,30 +873,6 @@ function updateTicker() {
   el('tk-src').textContent  = (lat ? (lat[COL.dsrc] || '') : '').toUpperCase();
 }
 
-// ─── KPIs ────────────────────────────────────────────
-function updateKPIs() {
-  const rows = DATA.filter(r => !DAILY_INDICATORS.has(r[COL.indicator]) && n(r[COL.actual]) !== null);
-  let beat = 0, miss = 0, nof = 0, dHit = 0, dN = 0;
-  rows.forEach(r => {
-    const src = r[COL.src] || '';
-    if (src === 'actual_as_forecast') { nof++; return; }
-    const surp = n(r[COL.surprise]);
-    if (surp === null) return;
-    if (surp > 0) beat++; else if (surp < 0) miss++;
-  });
-  const ut = beat + miss;
-  el('k-beat').textContent  = beat;
-  el('k-miss').textContent  = miss;
-  el('k-nof').textContent   = nof;
-  el('k-acc').textContent   = dN ? Math.round(dHit / dN * 100) + '%' : '—';
-  el('k-beat-b').textContent = ut ? Math.round(beat / ut * 100) + '% beat率' : '予想なし';
-  el('k-beat-b').className   = 'badge ' + (beat > miss ? 'bg-g' : 'bg-m');
-  el('k-miss-b').textContent = ut ? Math.round(miss / ut * 100) + '% miss率' : '—';
-  el('k-miss-b').className   = 'badge ' + (miss > 0 ? 'bg-r' : 'bg-m');
-  el('k-acc-n').textContent  = dN ? `n=${dN}` : 'データ不足';
-}
-
-// ─── Indicator Cards ─────────────────────────────────
 function renderCards() {
   const latest = {};
   DATA.forEach(r => {
@@ -971,28 +909,16 @@ function renderCards() {
       ? 'var(--mut)'
       : (surp !== null && surp > 0 ? 'var(--grn)' : surp !== null && surp < 0 ? 'var(--red)' : 'var(--txt)');
 
-    // Surprise 表示
-    let surpH;
-    if (src === 'actual_as_forecast') {
-      surpH = `<span class="surp surp-aaf">±0.00</span><span class="surp-meta">（予想なし — 自動代替）</span>`;
-    } else if (surp !== null) {
-      const sc = surp > 0 ? 'var(--grn)' : surp < 0 ? 'var(--red)' : 'var(--mut)';
-      surpH = `<span class="surp" style="color:${sc}">${surp > 0 ? '+' : ''}${surp.toFixed(3)}</span>
-               <span class="surp-meta">vs consensus ${fv !== null ? fmtK(fv) : '—'}</span>`;
-    } else {
-      surpH = `<span class="surp surp-aaf">—</span>`;
-    }
+    // Surprise 色と表示
+    const sc = surp === null ? 'var(--mut)' : surp > 0 ? 'var(--grn)' : surp < 0 ? 'var(--red)' : 'var(--mut)';
+    const surpStr = surp !== null
+      ? `<span style="color:${sc};font-family:var(--mono);font-size:12px">${surp > 0 ? '+' : ''}${surp.toFixed(2)}</span>`
+      : `<span style="color:var(--mut);font-size:11px">—</span>`;
 
-    // S&P500 翌日リターン表示
+    // S&P500 翌日リターン
     const retH = ret1 !== null
-      ? `<div class="ic-ret"><span class="icm-l">S&P翌日</span><span class="icm-v ${ret1 >= 0 ? 'up' : 'dn'}">${ret1 >= 0 ? '+' : ''}${ret1.toFixed(2)}%</span></div>`
+      ? `<div class="icm"><span class="icm-l">S&P t+1</span><span class="icm-v ${ret1 >= 0 ? 'up' : 'dn'}">${ret1 >= 0 ? '+' : ''}${ret1.toFixed(2)}%</span></div>`
       : '';
-
-    const savedFc  = getFC(name, r[COL.date]);
-    const inputVal = savedFc ? savedFc.forecast
-                   : (src === 'user' || src === 'user_retroactive' ? fv : '');
-    const inputCls = inputVal ? 'fc-inp filled' : 'fc-inp';
-    const inputId  = `fci-${name.replace(/[\s()%]/g, '_')}`;
 
     return `<div class="ic fi">
       <div class="ic-hdr">
@@ -1002,22 +928,12 @@ function renderCards() {
       <div class="ic-val" style="color:${ac}">${actual !== null ? fmtK(actual) : '—'}</div>
       <div class="ic-meta">
         <div class="icm"><span class="icm-l">consensus</span><span class="icm-v">${fmtK(fv)}</span></div>
+        <div class="icm"><span class="icm-l">surprise</span><span class="icm-v">${surpStr}</span></div>
         <div class="icm"><span class="icm-l">S&P500</span><span class="icm-v">${sp0 !== null ? fmtN(sp0) : '—'}</span></div>
         ${thr.bull !== null && thr.bull !== undefined ? `<div class="icm"><span class="icm-l">閾値</span><span class="icm-v">${fmtK(thr.bull)}</span></div>` : ''}
+        ${retH}
       </div>
-      ${retH}
       <div class="ic-date">${r[COL.date]} · ${(r[COL.dsrc] || '—')}</div>
-      <div class="fc-area">
-        <div class="fc-lbl">あなたの予想 ${srcTag(src)}</div>
-        <div class="fc-row">
-          <input class="${inputCls}" id="${inputId}" type="number" step="any"
-            placeholder="予想値を入力..."
-            value="${inputVal !== '' && inputVal !== null ? inputVal : ''}"
-            oninput="this.classList.toggle('filled', this.value !== '')">
-          <button class="btn-sv" onclick="saveFC('${name}','${r[COL.date]}')">保存</button>
-        </div>
-        <div class="fc-res">${surpH}</div>
-      </div>
     </div>`;
   }).join('');
 }
@@ -1043,133 +959,9 @@ function initChart(id) {
   return CHARTS[id];
 }
 
-function renderPricesChart() {
-  const rows = [...DATA].filter(r=>n(r[COL.sp0])).sort((a,b)=>new Date(a[COL.date])-new Date(b[COL.date]));
-  const dates = [...new Set(rows.map(r=>r[COL.date]))];
-  const spVal = dates.map(d=>{ const rs=rows.filter(r=>r[COL.date]===d); return rs.length?n(rs[rs.length-1][COL.sp0]):null; });
-  initChart('chPrices').setOption({ ...baseOpts,
-    xAxis:{ type:'category', data:dates, ...axStyle, axisLabel:{ ...axStyle.axisLabel, rotate:35 } },
-    yAxis:{ type:'value', scale:true, ...axStyle },
-    series:[
-      { name:'S&P500', type:'line', data:spVal, smooth:true, symbol:'none',
-        lineStyle:{ color:'#3b82f6', width:2 },
-        areaStyle:{ color:{ type:'linear', x:0,y:0,x2:0,y2:1, colorStops:[{offset:0,color:'rgba(59,130,246,.15)'},{offset:1,color:'rgba(59,130,246,0)'}] } } },
-    ],
-  });
-}
-
-function renderYCChart() {
-  const rows  = [...DATA].filter(r=>r[COL.indicator]==='Yield Curve 10Y-2Y'&&n(r[COL.actual])!==null).sort((a,b)=>new Date(a[COL.date])-new Date(b[COL.date]));
-  const dates = [...new Set(rows.map(r=>r[COL.date]))];
-  const vals  = dates.map(d=>{ const rs=rows.filter(r=>r[COL.date]===d); return rs.length?n(rs[rs.length-1][COL.actual]):null; });
-  initChart('chYC').setOption({ ...baseOpts,
-    xAxis:{ type:'category', data:dates, ...axStyle, axisLabel:{ ...axStyle.axisLabel, rotate:35 } },
-    yAxis:{ type:'value', ...axStyle, axisLabel:{ ...axStyle.axisLabel, formatter: v=>v+'%' } },
-    series:[{ type:'line', data:vals, smooth:true, symbol:'none',
-      lineStyle:{ color:'#f59e0b', width:2 },
-      areaStyle:{ color:{ type:'linear', x:0,y:0,x2:0,y2:1, colorStops:[{offset:0,color:'rgba(245,158,11,.2)'},{offset:1,color:'rgba(245,158,11,0)'}] } },
-      markLine:{ silent:true, data:[{ yAxis:0, lineStyle:{ color:'#f43f5e', type:'dashed', width:1 }, label:{ formatter:'Inversion 0%', color:'#f43f5e', fontFamily:'Space Mono', fontSize:9 } }] },
-    }],
-  });
-}
-
-
-function renderSurpChart() {
-  const rows = [...DATA]
-    .filter(r => !DAILY_INDICATORS.has(r[COL.indicator]) && n(r[COL.surprise]) !== null && (r[COL.src]||'').includes('user'))
-    .sort((a,b)=>new Date(a[COL.date])-new Date(b[COL.date]));
-  if (!rows.length) { initChart('chSurp').setOption({ ...baseOpts, series:[] }); return; }
-  const labels = rows.map(r=>r[COL.date]);
-  const surps  = rows.map(r=>n(r[COL.surprise]));
-  const names  = rows.map(r=>r[COL.indicator]);
-  initChart('chSurp').setOption({ ...baseOpts,
-    tooltip:{ trigger:'axis', formatter: p => {
-      const i = p[0].dataIndex;
-      return `<b>${labels[i]}</b><br>${names[i]}<br>Surprise: ${surps[i]>=0?'+':''}${surps[i]?.toFixed(3)}`;
-    }},
-    xAxis:{ type:'category', data:labels, ...axStyle, axisLabel:{ ...axStyle.axisLabel, rotate:35 } },
-    yAxis:{ type:'value', ...axStyle },
-    series:[{ type:'bar', barMaxWidth:36,
-      data:surps.map(v=>({ value:v, itemStyle:{ color:v>=0?'#10b981':'#f43f5e' } })) }],
-  });
-}
-
-function renderTrendSel() {
-  const sel   = el('trendSel');
-  const names = [...new Set(DATA.filter(r=>!DAILY_INDICATORS.has(r[COL.indicator])&&n(r[COL.actual])!==null).map(r=>r[COL.indicator]))];
-  const cur   = sel.value;
-  const existing = [...sel.options].map(o=>o.value);
-  names.forEach(nm => {
-    if (!existing.includes(nm)) {
-      const o = document.createElement('option'); o.value = o.textContent = nm; sel.appendChild(o);
-    }
-  });
-  if (names.length && !cur) sel.value = names[0];
-  renderTrendChart();
-}
-
-function renderTrendChart() {
-  const name = el('trendSel')?.value;
-  if (!name) return;
-  const rows  = [...DATA].filter(r=>r[COL.indicator]===name&&n(r[COL.actual])!==null).sort((a,b)=>new Date(a[COL.date])-new Date(b[COL.date]));
-  const dates = rows.map(r=>r[COL.date]);
-  const vals  = rows.map(r=>n(r[COL.actual]));
-  const thr   = THRESHOLD[name] || {};
-  const marks = [];
-  if (thr.bull !== null && thr.bull !== undefined) {
-    marks.push({ yAxis:thr.bull, lineStyle:{ color:'#10b981', type:'dashed', width:1 }, label:{ formatter:'強気 ' + fmtK(thr.bull), color:'#10b981', fontFamily:'Space Mono', fontSize:9 } });
-  }
-  if (thr.bear !== null && thr.bear !== undefined && thr.bear !== thr.bull) {
-    marks.push({ yAxis:thr.bear, lineStyle:{ color:'#f43f5e', type:'dashed', width:1 }, label:{ formatter:'弱気 ' + fmtK(thr.bear), color:'#f43f5e', fontFamily:'Space Mono', fontSize:9 } });
-  }
-  initChart('chTrend').setOption({ ...baseOpts,
-    xAxis:{ type:'category', data:dates, ...axStyle, axisLabel:{ ...axStyle.axisLabel, rotate:35 } },
-    yAxis:{ type:'value', scale:true, ...axStyle },
-    series:[{ type:'line', data:vals, smooth:false, symbolSize:6, lineStyle:{ color:'#3b82f6', width:2 }, itemStyle:{ color:'#3b82f6' }, markLine:{ silent:true, data:marks } }],
-  });
-}
 
 // ═══════════════════════════════════════════════════════
 // TRACKING TABLE
-// ═══════════════════════════════════════════════════════
-function renderTracking() {
-  const rows = [...DATA]
-    .filter(r => !DAILY_INDICATORS.has(r[COL.indicator]) && n(r[COL.actual]) !== null && (r[COL.src]||'').includes('user'))
-    .sort((a,b)=>new Date(b[COL.date])-new Date(a[COL.date]));
-  const nofN = DATA.filter(r=>r[COL.src]==='actual_as_forecast'&&n(r[COL.actual])!==null).length;
-
-  let mae = 0, maeN = 0;
-  rows.forEach(r => {
-    const s = n(r[COL.surprise]);
-    if (s !== null) { mae += Math.abs(s); maeN++; }
-  });
-  el('tr-n').textContent   = rows.length;
-  el('tr-dir').textContent = '—';
-  el('tr-mae').textContent = maeN ? (mae / maeN).toFixed(3) : '—';
-  el('tr-nof').textContent = nofN;
-
-  if (!rows.length) {
-    el('trackBody').innerHTML = '<tr><td colspan="8" class="empty">予想入力のあるデータがまだありません</td></tr>';
-    return;
-  }
-  el('trackBody').innerHTML = rows.map(r => {
-    const surp = n(r[COL.surprise]), f = n(r[COL.consensus]);
-    const sc   = surp===null?'var(--mut)':surp>0?'var(--grn)':surp<0?'var(--red)':'var(--mut)';
-    const ret1 = n(r[COL.ret1]);
-    const retCls = ret1===null?'neu':ret1>=0?'up':'dn';
-    return `<tr>
-      <td class="tm">${r[COL.date]}</td>
-      <td class="td-n">${r[COL.indicator]}</td>
-      <td class="tm">${fmtK(n(r[COL.actual]))}</td>
-      <td class="tm" style="color:var(--acc)">${fmtK(f)}</td>
-      <td class="tm" style="color:${sc}">${surp!==null?(surp>0?'+':'')+surp.toFixed(3):'—'}</td>
-      <td style="text-align:center">—</td>
-      <td>${srcTag(r[COL.src]||'none')}</td>
-      <td class="tm ${retCls}">${ret1!==null?(ret1>=0?'+':'')+ret1.toFixed(2)+'%':'—'}</td>
-    </tr>`;
-  }).join('');
-}
-
 // ═══════════════════════════════════════════════════════
 // DATA TABLE
 // ═══════════════════════════════════════════════════════
@@ -1218,6 +1010,772 @@ function renderTable() {
       <td class="tm">${n(r[COL.hy])!==null?n(r[COL.hy]).toFixed(2)+'%':'—'}</td>
     </tr>`;
   }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// UPCOMING RELEASES — 金融環境スナップショット
+// ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════
+// PHASE GAUGE — 景気フェーズ判定メーター
+// ═══════════════════════════════════════════════════════
+function renderPhaseGauge() {
+  if (!DATA.length) return;
+
+  // ── 最新値取得ヘルパー ──
+  const latestActual = (ind) => {
+    const rows = DATA.filter(r => r[COL.indicator] === ind && n(r[COL.actual]) !== null)
+      .sort((a,b) => new Date(b[COL.date]) - new Date(a[COL.date]));
+    return rows[0] ? n(rows[0][COL.actual]) : null;
+  };
+  const latestRow = (ind) => {
+    return DATA.filter(r => r[COL.indicator] === ind && n(r[COL.actual]) !== null)
+      .sort((a,b) => new Date(b[COL.date]) - new Date(a[COL.date]))[0] || null;
+  };
+
+  // ── 各指標の最新値 ──
+  const yc    = latestActual('Yield Curve 10Y-2Y');
+  const hy    = latestActual('HY Spread');
+  const vix   = latestActual('VIX');
+  const ism   = latestActual('ISM Manufacturing PMI');
+  const ismNm = latestActual('ISM Non-Manufacturing PMI');
+  const claims= latestActual('Initial Claims 4W MA');
+  const nfp   = latestActual('NFP');
+  const cbcc  = latestActual('CB Consumer Confidence');
+  const lei   = latestActual('Conference Board LEI');
+  const mich  = latestActual('Michigan Inflation 1Y');
+
+  // ── 月次トレンド（直近3件の方向） ──
+  const trend3 = (ind) => {
+    const rows = DATA.filter(r => r[COL.indicator] === ind && n(r[COL.actual]) !== null)
+      .sort((a,b) => new Date(b[COL.date]) - new Date(a[COL.date])).slice(0,3);
+    if (rows.length < 2) return 0;
+    const vals = rows.map(r => n(r[COL.actual]));
+    const diffs = [];
+    for (let i=0; i<vals.length-1; i++) diffs.push(vals[i] - vals[i+1]);
+    const avg = diffs.reduce((s,v)=>s+v,0)/diffs.length;
+    return avg > 0 ? 1 : avg < 0 ? -1 : 0;
+  };
+
+  // ── スコアリング（0=拡張寄り … 100=後退寄り） ──
+  // 各シグナルに weight を付けてスコアを 0-100 に正規化
+  const signals = [];
+
+  // 1. Yield Curve (weight:20, 最重要先行指標)
+  let ycScore = 50, ycSignal = 'neutral', ycLabel = '—';
+  if (yc !== null) {
+    ycLabel = (yc >= 0 ? '+' : '') + yc.toFixed(2) + '%';
+    if      (yc < -0.5) { ycScore = 90; ycSignal = 'bear'; }
+    else if (yc < 0)    { ycScore = 70; ycSignal = 'caution'; }
+    else if (yc < 0.5)  { ycScore = 40; ycSignal = 'neutral'; }
+    else                { ycScore = 15; ycSignal = 'bull'; }
+  }
+  signals.push({ name:'YC 10Y-2Y', val:ycLabel, score:ycScore, signal:ycSignal, weight:20, lead:'先行12ヶ月' });
+
+  // 2. HY Spread (weight:15)
+  let hyScore = 50, hySignal = 'neutral', hyLabel = '—';
+  if (hy !== null) {
+    hyLabel = hy.toFixed(2) + '%';
+    if      (hy > 6)   { hyScore = 90; hySignal = 'bear'; }
+    else if (hy > 4.5) { hyScore = 70; hySignal = 'caution'; }
+    else if (hy > 3.5) { hyScore = 40; hySignal = 'neutral'; }
+    else               { hyScore = 15; hySignal = 'bull'; }
+  }
+  signals.push({ name:'HY Spread', val:hyLabel, score:hyScore, signal:hySignal, weight:15, lead:'先行2ヶ月' });
+
+  // 3. VIX (weight:10)
+  let vixScore = 50, vixSignal = 'neutral', vixLabel = '—';
+  if (vix !== null) {
+    vixLabel = vix.toFixed(1);
+    if      (vix > 35) { vixScore = 90; vixSignal = 'bear'; }
+    else if (vix > 25) { vixScore = 70; vixSignal = 'caution'; }
+    else if (vix > 18) { vixScore = 40; vixSignal = 'neutral'; }
+    else               { vixScore = 15; vixSignal = 'bull'; }
+  }
+  signals.push({ name:'VIX', val:vixLabel, score:vixScore, signal:vixSignal, weight:10, lead:'即時' });
+
+  // 4. ISM Manufacturing PMI (weight:18, 最重要月次先行指標)
+  let ismScore = 50, ismSignal = 'neutral', ismLabel = '—';
+  if (ism !== null) {
+    ismLabel = ism.toFixed(1);
+    const t = trend3('ISM Manufacturing PMI');
+    if      (ism < 45)             { ismScore = 88; ismSignal = 'bear'; }
+    else if (ism < 50)             { ismScore = 65 + (t < 0 ? 10 : 0); ismSignal = t < 0 ? 'bear' : 'caution'; }
+    else if (ism < 53)             { ismScore = 35; ismSignal = 'neutral'; }
+    else                           { ismScore = 12; ismSignal = 'bull'; }
+  }
+  signals.push({ name:'ISM Mfg PMI', val:ismLabel, score:ismScore, signal:ismSignal, weight:18, lead:'先行3ヶ月' });
+
+  // 5. ISM Non-Mfg PMI (weight:12)
+  let ismNmScore = 50, ismNmSignal = 'neutral', ismNmLabel = '—';
+  if (ismNm !== null) {
+    ismNmLabel = ismNm.toFixed(1);
+    if      (ismNm < 48) { ismNmScore = 82; ismNmSignal = 'bear'; }
+    else if (ismNm < 52) { ismNmScore = 50; ismNmSignal = 'neutral'; }
+    else                 { ismNmScore = 18; ismNmSignal = 'bull'; }
+  }
+  signals.push({ name:'ISM Non-Mfg PMI', val:ismNmLabel, score:ismNmScore, signal:ismNmSignal, weight:12, lead:'先行1ヶ月' });
+
+  // 6. Initial Claims 4W MA (weight:10)
+  let clScore = 50, clSignal = 'neutral', clLabel = '—';
+  if (claims !== null) {
+    clLabel = (claims/1000).toFixed(0) + 'K';
+    const t = trend3('Initial Claims 4W MA');
+    if      (claims > 300000) { clScore = 85; clSignal = 'bear'; }
+    else if (claims > 250000) { clScore = 60 + (t > 0 ? 10 : 0); clSignal = t > 0 ? 'bear' : 'caution'; }
+    else if (claims > 215000) { clScore = 35; clSignal = 'neutral'; }
+    else                      { clScore = 15; clSignal = 'bull'; }
+  }
+  signals.push({ name:'初回失業申請 4WMA', val:clLabel, score:clScore, signal:clSignal, weight:10, lead:'先行1ヶ月' });
+
+  // 7. CB Consumer Confidence (weight:8)
+  let cbScore = 50, cbSignal = 'neutral', cbLabel = '—';
+  if (cbcc !== null) {
+    cbLabel = cbcc.toFixed(1);
+    if      (cbcc < 70)  { cbScore = 82; cbSignal = 'bear'; }
+    else if (cbcc < 90)  { cbScore = 62; cbSignal = 'caution'; }
+    else if (cbcc < 110) { cbScore = 38; cbSignal = 'neutral'; }
+    else                 { cbScore = 15; cbSignal = 'bull'; }
+  }
+  signals.push({ name:'CB消費者信頼感', val:cbLabel, score:cbScore, signal:cbSignal, weight:8, lead:'先行2ヶ月' });
+
+  // 8. Conference Board LEI (weight:7)
+  let leiScore = 50, leiSignal = 'neutral', leiLabel = '—';
+  if (lei !== null) {
+    leiLabel = lei.toFixed(1);
+    const t = trend3('Conference Board LEI');
+    leiScore = lei < 0 ? (t < 0 ? 85 : 70) : lei < 1 ? 45 : 18;
+    leiSignal = leiScore > 75 ? 'bear' : leiScore > 55 ? 'caution' : 'bull';
+  }
+  signals.push({ name:'CB Leading Index', val:leiLabel, score:leiScore, signal:leiSignal, weight:7, lead:'先行6ヶ月' });
+
+  // ── 加重平均スコア計算 ──
+  const totalW = signals.reduce((s,sg)=> s + (sg.val !== '—' ? sg.weight : 0), 0);
+  const rawScore = totalW > 0
+    ? signals.reduce((s,sg) => s + (sg.val !== '—' ? sg.score * sg.weight : 0), 0) / totalW
+    : 50;
+  const score = Math.round(rawScore);
+
+  // ── フェーズ判定 ──
+  let phase, phaseClass, phaseSub, trackColor;
+  if      (score < 30)  { phase='拡張';   phaseClass='phase-expand';   phaseSub='景気は拡大局面';         trackColor='var(--grn)'; }
+  else if (score < 52)  { phase='踊り場'; phaseClass='phase-plateau';  phaseSub='拡張と後退の境界付近';   trackColor='var(--acc)'; }
+  else if (score < 70)  { phase='後退入口';phaseClass='phase-edge';    phaseSub='後退局面への移行シグナル';trackColor='var(--amb)'; }
+  else                  { phase='後退';   phaseClass='phase-recession'; phaseSub='景気後退の可能性が高い'; trackColor='var(--red)'; }
+
+  // ── シグナルテキスト（後退シグナルを数える） ──
+  const bearCount = signals.filter(s => s.signal === 'bear' && s.val !== '—').length;
+  const cautionCount = signals.filter(s => s.signal === 'caution' && s.val !== '—').length;
+  const dataCount = signals.filter(s => s.val !== '—').length;
+  const signalText = dataCount > 0
+    ? `${dataCount}指標中: 後退シグナル ${bearCount}個 / 注意 ${cautionCount}個`
+    : 'データ取得中...';
+
+  // ── アラート条件: 後退シグナル3つ以上 + スコア55超 ──
+  const showAlert = bearCount >= 3 && score >= 52;
+  const alertMsg = showAlert
+    ? `後退シグナルが${bearCount}指標で点灯中。過去のパターンでは今後3〜6ヶ月以内に景気後退が確認されやすい局面です。`
+    : '';
+
+  // ── DOM 更新 ──
+  const badge = el('pg-phase-badge');
+  badge.textContent = phase;
+  badge.className   = 'pg-phase-badge ' + phaseClass;
+  el('pg-phase-sub').textContent = phaseSub;
+
+  const fill   = el('pg-track-fill');
+  const marker = el('pg-track-marker');
+  fill.style.width      = score + '%';
+  fill.style.background = trackColor;
+  marker.style.left     = `calc(${score}% - 1.5px)`;
+
+  const scoreEl = el('pg-score-num');
+  scoreEl.textContent = score;
+  scoreEl.className   = 'pg-score-num ' + phaseClass;
+
+  el('pg-signal-text').textContent = signalText;
+
+  // アラート
+  const alertEl = el('pg-alert');
+  if (showAlert) {
+    alertEl.style.display = 'flex';
+    alertEl.style.background = 'rgba(245,158,11,.06)';
+    alertEl.style.borderTop  = '1px solid rgba(245,158,11,.2)';
+    el('pg-alert-msg').textContent = alertMsg;
+  } else {
+    alertEl.style.display = 'none';
+  }
+
+  // ── シグナルカード描画 ──
+  const dotColor = { bull:'var(--grn)', neutral:'var(--mut)', caution:'var(--amb)', bear:'var(--red)' };
+  const badgeCls = { bull:'bg-g', neutral:'bg-m', caution:'bg-a', bear:'bg-r' };
+  const badgeTxt = { bull:'拡張', neutral:'中立', caution:'注意', bear:'後退シグナル' };
+
+  el('pg-signals').innerHTML = signals.map(sg => {
+    const dot  = dotColor[sg.signal] || 'var(--mut)';
+    const bcls = badgeCls[sg.signal] || 'bg-m';
+    const btxt = badgeTxt[sg.signal] || '—';
+    const valColor = sg.signal === 'bear' ? 'var(--red)'
+                   : sg.signal === 'caution' ? 'var(--amb)'
+                   : sg.signal === 'bull' ? 'var(--grn)' : 'var(--txt)';
+    return `<div class="pg-sig">
+      <span class="pg-sig-dot" style="background:${dot}"></span>
+      <span class="pg-sig-name">${sg.name}</span>
+      <span class="pg-sig-val" style="color:${valColor}">${sg.val}</span>
+      <span class="pg-sig-badge badge ${bcls}">${btxt}</span>
+      <span style="font-family:var(--mono);font-size:9px;color:var(--mut);margin-left:4px">${sg.lead}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderPhaseGaugeEmpty() {
+  const badge = el('pg-phase-badge');
+  if (badge) { badge.textContent = '—'; badge.className = 'pg-phase-badge'; }
+}
+
+function renderEnvSnap() {
+  const snap = el('envSnap');
+  if (!snap) return;
+
+  // 最新値取得
+  const latest = (ind) => {
+    const rows = [...DATA].filter(r => r[COL.indicator] === ind && n(r[COL.actual]) !== null)
+      .sort((a,b) => new Date(b[COL.date]) - new Date(a[COL.date]));
+    return rows[0] || null;
+  };
+  // 月次指標からコンテキスト取得（yc/hy/vix埋め込み）
+  const ctxRow = [...DATA]
+    .filter(r => !DAILY_INDICATORS.has(r[COL.indicator]) && n(r[COL.yc]) !== null)
+    .sort((a,b) => new Date(b[COL.date]) - new Date(a[COL.date]))[0];
+
+  const ycR  = latest('Yield Curve 10Y-2Y');
+  const hyR  = latest('HY Spread');
+  const vxR  = latest('VIX');
+  const spR  = [...DATA].filter(r => n(r[COL.sp0])).sort((a,b) => new Date(b[COL.date]) - new Date(a[COL.date]))[0];
+
+  const yc  = ycR  ? n(ycR[COL.actual])  : (ctxRow ? n(ctxRow[COL.yc])  : null);
+  const hy  = hyR  ? n(hyR[COL.actual])  : (ctxRow ? n(ctxRow[COL.hy])  : null);
+  const vix = vxR  ? n(vxR[COL.actual])  : (ctxRow ? n(ctxRow[COL.vix]) : null);
+  const sp  = spR  ? n(spR[COL.sp0])     : null;
+  const regime = ctxRow ? (ctxRow[COL.regime] || '—') : '—';
+  const ff  = ctxRow ? n(ctxRow[COL.ff_rate]) : null;
+
+  const item = (label, val, cls, sub) =>
+    `<div style="display:flex;flex-direction:column;gap:2px;padding:6px 16px;border-right:1px solid var(--bdr);min-width:100px">
+      <span style="font-family:var(--mono);font-size:9px;color:var(--mut);letter-spacing:.1em">${label}</span>
+      <span style="font-family:var(--mono);font-size:16px;font-weight:700;color:${cls}">${val}</span>
+      ${sub ? `<span style="font-size:10px;color:var(--mut)">${sub}</span>` : ''}
+    </div>`;
+
+  const ycCls  = yc  === null ? 'var(--mut)' : yc  >= 0 ? 'var(--grn)' : 'var(--red)';
+  const hyCls  = hy  === null ? 'var(--mut)' : hy  >  5 ? 'var(--red)' : hy > 4 ? 'var(--amb)' : 'var(--grn)';
+  const vixCls = vix === null ? 'var(--mut)' : vix > 30 ? 'var(--red)' : vix > 20 ? 'var(--amb)' : 'var(--grn)';
+
+  snap.innerHTML = [
+    item('REGIME',    regime,  'var(--acc)', ff !== null ? `FF ${ff.toFixed(2)}%` : ''),
+    item('YC 10Y-2Y', yc  !== null ? (yc >= 0 ? '+' : '') + yc.toFixed(2) + '%'  : '—', ycCls,  yc !== null ? (yc >= 0 ? 'NORMAL' : 'INVERTED') : ''),
+    item('HY SPREAD', hy  !== null ? hy.toFixed(2) + '%'  : '—', hyCls,  hy  !== null ? (hy > 5 ? 'HIGH RISK' : hy > 4 ? 'CAUTION' : 'NORMAL') : ''),
+    item('VIX',       vix !== null ? vix.toFixed(1)        : '—', vixCls, vix !== null ? (vix > 30 ? 'FEAR' : vix > 20 ? 'ELEVATED' : 'CALM') : ''),
+    item('S&P 500',   sp  !== null ? fmtN(sp)              : '—', 'var(--txt)', spR ? spR[COL.date] : ''),
+  ].join('');
+}
+
+// ═══════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════
+// SCENARIO FORECAST — 未来発表の consensus 入力 → 株価インパクト予測
+// ═══════════════════════════════════════════════════════
+
+function scnPopulate() {
+  const INDS = [...new Set(
+    DATA.filter(r => !DAILY_INDICATORS.has(r[COL.indicator]) && n(r[COL.actual]) !== null && n(r[COL.ret1]) !== null)
+        .map(r => r[COL.indicator])
+  )].sort();
+  [0,1,2].forEach(i => {
+    const sel = el('scnInd'+i);
+    if (!sel) return;
+    const cur = sel.value;
+    while (sel.options.length > 1) sel.remove(1);
+    INDS.forEach(nm => {
+      const o = document.createElement('option');
+      o.value = o.textContent = nm;
+      sel.appendChild(o);
+    });
+    if (cur) sel.value = cur;
+  });
+}
+
+// 指標iのコンセンサス値から PATTERN DB で retMed を計算
+function scnCalcRet(ind, consensusVal) {
+  if (!ind) return null;
+  const candidates = DATA.filter(r =>
+    r[COL.indicator] === ind && n(r[COL.actual]) !== null && n(r[COL.ret1]) !== null
+  );
+  if (!candidates.length) return null;
+
+  // 現在の金融環境
+  const ycR = DATA.filter(r=>r[COL.indicator]==='Yield Curve 10Y-2Y'&&n(r[COL.actual])!==null)
+    .sort((a,b)=>new Date(b[COL.date])-new Date(a[COL.date]))[0];
+  const hyR = DATA.filter(r=>r[COL.indicator]==='HY Spread'&&n(r[COL.actual])!==null)
+    .sort((a,b)=>new Date(b[COL.date])-new Date(a[COL.date]))[0];
+  const vxR = DATA.filter(r=>r[COL.indicator]==='VIX'&&n(r[COL.actual])!==null)
+    .sort((a,b)=>new Date(b[COL.date])-new Date(a[COL.date]))[0];
+  const ctxR = DATA.filter(r=>!DAILY_INDICATORS.has(r[COL.indicator])&&n(r[COL.yc])!==null)
+    .sort((a,b)=>new Date(b[COL.date])-new Date(a[COL.date]))[0];
+  const qyc  = ycR ? n(ycR[COL.actual]) : (ctxR ? n(ctxR[COL.yc])  : null);
+  const qhy  = hyR ? n(hyR[COL.actual]) : (ctxR ? n(ctxR[COL.hy])  : null);
+  const qvix = vxR ? n(vxR[COL.actual]) : (ctxR ? n(ctxR[COL.vix]) : null);
+
+  // 最新の実績値を取得してsurprise_pctを計算
+  const lastRow = candidates.sort((a,b)=>new Date(b[COL.date])-new Date(a[COL.date]))[0];
+  const lastActual = n(lastRow[COL.actual]);
+  let surprisePct = null;
+  if (consensusVal !== null && lastActual !== null && consensusVal !== 0) {
+    surprisePct = (consensusVal - lastActual) / Math.abs(lastActual) * 100;
+  }
+  const query = { yc: qyc, hy: qhy, vix: qvix, surprise_pct: surprisePct };
+
+  const topN = 10;
+  const scored = candidates
+    .map(r => ({ r, score: pdbSimilarityScore(query, r) ?? 0.5 }))
+    .sort((a,b) => b.score - a.score).slice(0, topN);
+
+  const med = arr => {
+    const v = arr.filter(x => x !== null);
+    if (!v.length) return null;
+    const s = [...v].sort((a,b)=>a-b), m = Math.floor(s.length/2);
+    return s.length%2 ? s[m] : (s[m-1]+s[m])/2;
+  };
+
+  return {
+    t1:  med(scored.map(s => n(s.r[COL.ret1]))),
+    t5:  med(scored.map(s => n(s.r[COL.ret5]))),
+    t10: med(scored.map(s => n(s.r[COL.ret10]))),
+    t20: med(scored.map(s => n(s.r[COL.ret20]))),
+    n:   scored.length,
+    ind, surprisePct,
+  };
+}
+
+// シナリオ予測をチャートに反映
+function renderScenario() {
+  const today = new Date().toISOString().slice(0,10);
+
+  // 3スロットの結果を収集
+  const results = [0,1,2].map(i => {
+    const ind  = el('scnInd'+i)?.value || '';
+    const rawV = el('scnVal'+i)?.value;
+    const val  = rawV !== '' && rawV !== undefined ? parseFloat(rawV) : null;
+    const hint = el('scnHint'+i);
+
+    if (!ind) { if(hint) hint.textContent=''; return null; }
+    const ret = scnCalcRet(ind, val);
+    if (!ret) { if(hint) hint.textContent='データなし'; return null; }
+
+    // ヒント表示
+    if (hint) {
+      const sp = ret.surprisePct;
+      hint.textContent = val !== null
+        ? `前回比 ${sp>=0?'+':''}${sp?.toFixed(1)}%  →  t1中央値 ${ret.t1>=0?'+':''}${ret.t1?.toFixed(2)}%`
+        : `consensus未入力 — 金融環境のみで類似検索`;
+      hint.style.color = ret.t1 >= 0 ? 'var(--grn)' : 'var(--red)';
+    }
+    return ret;
+  }).filter(Boolean);
+
+  // statsテキスト更新
+  const statsEl = el('scnStats');
+  if (!results.length) {
+    if (statsEl) statsEl.textContent = '指標とconsensusを入力すると予測線をチャートに追加します';
+    // シナリオ系列を除いてチャート再描画
+    window._scnForecast = null;
+    renderCmp();
+    return;
+  }
+
+  // 平均 ret を計算
+  const avg = key => {
+    const vals = results.map(r => r[key]).filter(v => v !== null);
+    return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : null;
+  };
+  const avgRet = { t1:avg('t1'), t5:avg('t5'), t10:avg('t10'), t20:avg('t20') };
+
+  // 最新S&P500を取得
+  const spRow = DATA.filter(r=>n(r[COL.sp0])).sort((a,b)=>new Date(b[COL.date])-new Date(a[COL.date]))[0];
+  const todaySp0 = spRow ? n(spRow[COL.sp0]) : null;
+
+  if (!todaySp0) {
+    if(statsEl) statsEl.textContent = 'S&P500データがありません';
+    return;
+  }
+
+  // 今日起点の予測点を生成
+  const addBizDays = (dateStr, days) => {
+    const d = new Date(dateStr); let added = 0;
+    while (added < days) { d.setDate(d.getDate()+1); if(d.getDay()!==0&&d.getDay()!==6) added++; }
+    return d.toISOString().slice(0,10);
+  };
+
+  const fcPoints = [
+    { offset:0,  key:'t0',  ret:0 },
+    { offset:1,  key:'t1',  ret:avgRet.t1  },
+    { offset:5,  key:'t5',  ret:avgRet.t5  },
+    { offset:10, key:'t10', ret:avgRet.t10 },
+    { offset:20, key:'t20', ret:avgRet.t20 },
+  ].filter(p => p.ret !== null).map(p => ({
+    date:  p.offset === 0 ? today : addBizDays(today, p.offset),
+    label: p.key,
+    spVal: todaySp0 * (1 + p.ret / 100),
+    ret:   p.ret,
+  }));
+
+  // グローバルに保持してrenderCmpから参照
+  window._scnForecast = { fcPoints, todaySp0, today, results };
+
+  // stats更新
+  const indNames = results.map(r=>r.ind.length>14?r.ind.slice(0,14)+'…':r.ind).join(' + ');
+  if (statsEl) {
+    const lines = [
+      `シナリオ: ${indNames}`,
+      `平均リターン中央値 — t1: ${avgRet.t1>=0?'+':''}${avgRet.t1?.toFixed(2)}%  t5: ${avgRet.t5>=0?'+':''}${avgRet.t5?.toFixed(2)}%  t10: ${avgRet.t10>=0?'+':''}${avgRet.t10?.toFixed(2)}%  t20: ${avgRet.t20>=0?'+':''}${avgRet.t20?.toFixed(2)}%`,
+      `起点S&P500: ${fmtN(todaySp0)}  →  t20予測: ${fmtN(fcPoints.find(p=>p.label==='t20')?.spVal)}`,
+    ];
+    statsEl.innerHTML = lines.map(l=>`<div>${l}</div>`).join('');
+    statsEl.style.color = avgRet.t1 >= 0 ? 'var(--grn)' : 'var(--red)';
+  }
+
+  renderCmp();
+}
+
+// MARKET VIEW — 複合チャート（S&P500 + 指標 + 金利 + PATTERN DB予測）
+// ═══════════════════════════════════════════════════════
+function cmpPopulate() {
+  const sel = el('cmpIndSel');
+  if (!sel) return;
+  const existing = [...sel.options].map(o => o.value);
+  const names = [...new Set(
+    DATA.filter(r => !DAILY_INDICATORS.has(r[COL.indicator]) && n(r[COL.actual]) !== null)
+        .map(r => r[COL.indicator])
+  )].sort();
+  names.forEach(nm => {
+    if (!existing.includes(nm)) {
+      const o = document.createElement('option'); o.value = o.textContent = nm; sel.appendChild(o);
+    }
+  });
+  if (!sel.value && names.length) sel.value = names[0];
+}
+
+function renderCmp() {
+  const ind     = el('cmpIndSel')?.value || '';
+  const months  = parseInt(el('cmpRange')?.value || '3');
+  const showYC  = el('cmpShowYC')?.checked;
+  const showHY  = el('cmpShowHY')?.checked;
+  const showVIX = el('cmpShowVIX')?.checked;
+
+  const cutDate = months > 0
+    ? new Date(new Date().setMonth(new Date().getMonth() - months))
+    : new Date('2020-01-01');
+
+  // ── S&P500 系列 ──
+  const spAll = [...DATA].filter(r => n(r[COL.sp0]) && new Date(r[COL.date]) >= cutDate)
+    .sort((a,b) => new Date(a[COL.date]) - new Date(b[COL.date]));
+  const spMap = {}; spAll.forEach(r => spMap[r[COL.date]] = n(r[COL.sp0]));
+  const spDates = [...new Set(spAll.map(r => r[COL.date]))];
+  const spVals  = spDates.map(d => spMap[d] ?? null);
+
+  // ── 選択指標 ──
+  const indRows = ind
+    ? [...DATA].filter(r => r[COL.indicator] === ind && n(r[COL.actual]) !== null && new Date(r[COL.date]) >= cutDate)
+        .sort((a,b) => new Date(a[COL.date]) - new Date(b[COL.date]))
+    : [];
+  const thr = ind ? (THRESHOLD[ind] || {}) : {};
+  // lastIndRow は期間フィルタなし（月次指標が cutDate 外でも予測線を出すため）
+  const lastIndRow = ind
+    ? ([...DATA].filter(r => r[COL.indicator] === ind && n(r[COL.actual]) !== null && n(r[COL.sp0]) !== null)
+        .sort((a,b) => new Date(b[COL.date]) - new Date(a[COL.date]))[0] || null)
+    : null;
+  const lastDate   = lastIndRow ? lastIndRow[COL.date] : null;
+  const lastSp0    = lastIndRow ? n(lastIndRow[COL.sp0]) : null;
+
+  // ── 金利系列（期間でフィルタ） ──
+  const getEnv = (indicator) =>
+    [...DATA].filter(r => r[COL.indicator] === indicator && n(r[COL.actual]) !== null && new Date(r[COL.date]) >= cutDate)
+      .sort((a,b) => new Date(a[COL.date]) - new Date(b[COL.date]));
+  const ycRows  = showYC  ? getEnv('Yield Curve 10Y-2Y') : [];
+  const hyRows  = showHY  ? getEnv('HY Spread')          : [];
+  const vixRows = showVIX ? getEnv('VIX')                : [];
+  const envMap = (rows) => { const m={}; rows.forEach(r=>m[r[COL.date]]=n(r[COL.actual])); return m; };
+  const ycMap = envMap(ycRows), hyMap = envMap(hyRows), vixMap = envMap(vixRows);
+
+  // ── PATTERN DB で将来リターン取得 ──
+  let forecastPoints = [];  // [{label, spVal, type}]
+  let pdbN = 0;
+  if (ind && lastDate && lastSp0) {
+    // 現在の金融環境
+    const ctxR = [...DATA].filter(r => !DAILY_INDICATORS.has(r[COL.indicator]) && n(r[COL.yc]) !== null)
+      .sort((a,b) => new Date(b[COL.date]) - new Date(a[COL.date]))[0];
+    const ycR = [...DATA].filter(r=>r[COL.indicator]==='Yield Curve 10Y-2Y'&&n(r[COL.actual])!==null).sort((a,b)=>new Date(b[COL.date])-new Date(a[COL.date]))[0];
+    const hyR = [...DATA].filter(r=>r[COL.indicator]==='HY Spread'&&n(r[COL.actual])!==null).sort((a,b)=>new Date(b[COL.date])-new Date(a[COL.date]))[0];
+    const vxR = [...DATA].filter(r=>r[COL.indicator]==='VIX'&&n(r[COL.actual])!==null).sort((a,b)=>new Date(b[COL.date])-new Date(a[COL.date]))[0];
+    const qyc  = ycR ? n(ycR[COL.actual])  : (ctxR ? n(ctxR[COL.yc])  : null);
+    const qhy  = hyR ? n(hyR[COL.actual])  : (ctxR ? n(ctxR[COL.hy])  : null);
+    const qvix = vxR ? n(vxR[COL.actual])  : (ctxR ? n(ctxR[COL.vix]) : null);
+    const query = { yc: qyc, hy: qhy, vix: qvix, surprise_pct: null };
+
+    const candidates = DATA.filter(r =>
+      r[COL.indicator] === ind && n(r[COL.actual]) !== null && n(r[COL.ret1]) !== null
+    );
+    if (candidates.length) {
+      const topN = 10;
+      const scored = candidates.map(r => ({ r, score: pdbSimilarityScore(query, r) ?? 0.5 }))
+        .sort((a,b) => b.score - a.score).slice(0, topN);
+      pdbN = scored.length;
+
+      const med = arr => {
+        const v = arr.filter(x => x !== null);
+        if (!v.length) return null;
+        const s = [...v].sort((a,b)=>a-b), m = Math.floor(s.length/2);
+        return s.length%2 ? s[m] : (s[m-1]+s[m])/2;
+      };
+
+      const retMed = {
+        t1:  med(scored.map(s => n(s.r[COL.ret1]))),
+        t5:  med(scored.map(s => n(s.r[COL.ret5]))),
+        t10: med(scored.map(s => n(s.r[COL.ret10]))),
+        t20: med(scored.map(s => n(s.r[COL.ret20]))),
+      };
+
+      // 予測日付を営業日ベースで生成
+      const addBizDays = (dateStr, days) => {
+        const d = new Date(dateStr); let added = 0;
+        while (added < days) { d.setDate(d.getDate()+1); if(d.getDay()!==0&&d.getDay()!==6) added++; }
+        return d.toISOString().slice(0,10);
+      };
+
+      const fcPoints = [
+        { offset:0,  key:'t0',  ret:0 },
+        { offset:1,  key:'t1',  ret:retMed.t1  },
+        { offset:5,  key:'t5',  ret:retMed.t5  },
+        { offset:10, key:'t10', ret:retMed.t10 },
+        { offset:20, key:'t20', ret:retMed.t20 },
+      ].filter(p => p.ret !== null);
+
+      forecastPoints = fcPoints.map(p => ({
+        date:  p.offset === 0 ? lastDate : addBizDays(lastDate, p.offset),
+        label: p.key,
+        spVal: lastSp0 * (1 + p.ret / 100),
+        ret:   p.ret,
+      }));
+    }
+  }
+
+  // ── 全日付軸を統合（S&P日付 + 予測日付） ──
+  const fcDates = forecastPoints.map(p => p.date);
+  // シナリオ予測の日付も統合
+  const scnFc = window._scnForecast;
+  const scnDates = scnFc ? scnFc.fcPoints.map(p => p.date) : [];
+  const allDates = [...new Set([...spDates, ...fcDates, ...scnDates])].sort();
+
+  // ── 系列構築 ──
+  const series = [];
+  let yAxisCount = 0;
+  const yAxes = [];
+
+  // Y0: S&P500（左軸）
+  const spSeries = allDates.map(d => spMap[d] ?? null);
+  series.push({
+    name:'S&P500', type:'line', yAxisIndex:0, data:spSeries,
+    smooth:true, symbol:'none', z:2,
+    lineStyle:{ color:'#3b82f6', width:2 },
+    areaStyle:{ color:{ type:'linear',x:0,y:0,x2:0,y2:1,
+      colorStops:[{offset:0,color:'rgba(59,130,246,.12)'},{offset:1,color:'transparent'}]} },
+  });
+  yAxes.push({
+    type:'value', scale:true, name:'S&P', nameTextStyle:{color:'#3b82f6',fontSize:9},
+    ...axStyle, axisLabel:{...axStyle.axisLabel, formatter:v=>fmtN(v,0)},
+  });
+  yAxisCount++;
+
+  // Y1: 選択指標（右軸1）
+  if (ind && indRows.length) {
+    const indMap = {}; indRows.forEach(r => indMap[r[COL.date]] = n(r[COL.actual]));
+    const indVals = allDates.map(d => indMap[d] ?? null);
+    const marks = [];
+    if (thr.bull !== null && thr.bull !== undefined)
+      marks.push({ yAxis:thr.bull, lineStyle:{color:'#10b981',type:'dashed',width:1},
+        label:{formatter:'強気 '+fmtK(thr.bull),color:'#10b981',fontFamily:'Space Mono',fontSize:9} });
+    if (thr.bear !== null && thr.bear !== undefined && thr.bear !== thr.bull)
+      marks.push({ yAxis:thr.bear, lineStyle:{color:'#f43f5e',type:'dashed',width:1},
+        label:{formatter:'弱気 '+fmtK(thr.bear),color:'#f43f5e',fontFamily:'Space Mono',fontSize:9} });
+
+    series.push({
+      name:ind, type:'scatter', yAxisIndex:yAxisCount, data:indVals,
+      symbolSize:8, z:4,
+      itemStyle:{ color:'#f59e0b', opacity:0.9 },
+      markLine:{ silent:true, data:marks },
+    });
+    yAxes.push({
+      type:'value', scale:true, name:ind.length>12?ind.slice(0,12)+'…':ind,
+      nameTextStyle:{color:'#f59e0b',fontSize:9}, splitLine:{show:false},
+      ...axStyle, axisLabel:{...axStyle.axisLabel, formatter:v=>fmtK(v)},
+    });
+    yAxisCount++;
+  }
+
+  // Y2: YC（右軸2）
+  if (showYC && ycRows.length) {
+    const vals = allDates.map(d => ycMap[d] ?? null);
+    series.push({
+      name:'YC 10Y-2Y', type:'line', yAxisIndex:yAxisCount, data:vals,
+      smooth:true, symbol:'none', z:1,
+      lineStyle:{ color:'#10b981', width:1.5, type:'dashed' },
+    });
+    yAxes.push({
+      type:'value', scale:true, name:'YC%', nameTextStyle:{color:'#10b981',fontSize:9},
+      splitLine:{show:false}, ...axStyle,
+      axisLabel:{...axStyle.axisLabel, formatter:v=>v.toFixed(2)+'%'},
+    });
+    yAxisCount++;
+  }
+
+  // HY
+  if (showHY && hyRows.length) {
+    const vals = allDates.map(d => hyMap[d] ?? null);
+    series.push({
+      name:'HY Spread', type:'line', yAxisIndex:yAxisCount, data:vals,
+      smooth:true, symbol:'none', z:1,
+      lineStyle:{ color:'#f43f5e', width:1.5, type:'dashed' },
+    });
+    yAxes.push({
+      type:'value', scale:true, name:'HY%', nameTextStyle:{color:'#f43f5e',fontSize:9},
+      splitLine:{show:false}, ...axStyle,
+      axisLabel:{...axStyle.axisLabel, formatter:v=>v.toFixed(2)+'%'},
+    });
+    yAxisCount++;
+  }
+
+  // VIX
+  if (showVIX && vixRows.length) {
+    const vals = allDates.map(d => vixMap[d] ?? null);
+    series.push({
+      name:'VIX', type:'line', yAxisIndex:yAxisCount, data:vals,
+      smooth:true, symbol:'none', z:1,
+      lineStyle:{ color:'#a78bfa', width:1.5, type:'dashed' },
+    });
+    yAxes.push({
+      type:'value', scale:true, name:'VIX', nameTextStyle:{color:'#a78bfa',fontSize:9},
+      splitLine:{show:false}, ...axStyle,
+      axisLabel:{...axStyle.axisLabel, formatter:v=>v.toFixed(0)},
+    });
+    yAxisCount++;
+  }
+
+  // ── PATTERN DB 予測線（S&P500軸=Y0） ──
+  if (forecastPoints.length > 1) {
+    const fcMap = {}; forecastPoints.forEach(p => fcMap[p.date] = p.spVal);
+    const fcVals = allDates.map(d => fcMap[d] ?? null);
+
+    // 予測点だけシンボル表示
+    series.push({
+      name:'PDB予測(中央値)', type:'line', yAxisIndex:0,
+      data:fcVals, smooth:false, z:5,
+      lineStyle:{ color:'#a78bfa', width:2, type:'dotted' },
+      itemStyle:{ color:'#a78bfa' },
+      symbolSize: (val) => val !== null ? 8 : 0,
+      label:{
+        show:true, position:'top', fontSize:9, fontFamily:'Space Mono', color:'#a78bfa',
+        formatter: (p) => {
+          const fp = forecastPoints.find(f => f.date === allDates[p.dataIndex]);
+          return fp && fp.ret !== 0 ? (fp.ret>=0?'+':'')+fp.ret.toFixed(2)+'%' : '';
+        }
+      },
+    });
+
+    // 予測開始の縦線
+    series.push({
+      name:'_sep', type:'line', yAxisIndex:0, data:[], symbol:'none',
+      markLine:{ silent:true, data:[{
+        xAxis: lastDate,
+        lineStyle:{ color:'rgba(167,139,250,.5)', type:'dashed', width:1 },
+        label:{ formatter:'予測', color:'#a78bfa', fontSize:9, fontFamily:'Space Mono' }
+      }]}
+    });
+  }
+
+  // ── シナリオ予測線（今日起点・緑色） ──
+  if (scnFc && scnFc.fcPoints.length > 1) {
+    const scnMap = {}; scnFc.fcPoints.forEach(p => scnMap[p.date] = p.spVal);
+    const scnVals = allDates.map(d => scnMap[d] ?? null);
+    series.push({
+      name:'シナリオ予測', type:'line', yAxisIndex:0,
+      data:scnVals, smooth:false, z:6,
+      lineStyle:{ color:'#10b981', width:2, type:'dashed' },
+      itemStyle:{ color:'#10b981' },
+      symbolSize: val => val !== null ? 8 : 0,
+      label:{
+        show:true, position:'top', fontSize:9, fontFamily:'Space Mono', color:'#10b981',
+        formatter: p => {
+          const fp = scnFc.fcPoints.find(f => f.date === allDates[p.dataIndex]);
+          return fp && fp.ret !== 0 ? (fp.ret>=0?'+':'')+fp.ret.toFixed(2)+'%' : '';
+        }
+      },
+    });
+    // 今日の縦線
+    series.push({
+      name:'_scn_sep', type:'line', yAxisIndex:0, data:[], symbol:'none',
+      markLine:{ silent:true, data:[{
+        xAxis: scnFc.today,
+        lineStyle:{ color:'rgba(16,185,129,.5)', type:'dashed', width:1 },
+        label:{ formatter:'シナリオ起点', color:'#10b981', fontSize:9, fontFamily:'Space Mono' }
+      }]}
+    });
+    if(el('cmpFcBadge')) el('cmpFcBadge').style.display='inline-block';
+  }
+
+  // ── PATTERN DB バッジ・stats ──
+  if (forecastPoints.length > 1) {
+    if(el('cmpFcBadge')) el('cmpFcBadge').style.display='inline-block';
+    // stats
+    const lastFc = forecastPoints[forecastPoints.length-1];
+    if(el('cmpStats')) el('cmpStats').textContent =
+      `PATTERN DB Top10類似局面 (n=${pdbN}) — ` +
+      forecastPoints.filter(p=>p.ret!==0).map(p=>`${p.label}: ${p.ret>=0?'+':''}${p.ret.toFixed(2)}%`).join('  ');
+  } else {
+    if(el('cmpFcBadge')) el('cmpFcBadge').style.display='none';
+    if(el('cmpStats')) el('cmpStats').textContent = ind ? 'ret_t1〜t20データがあるとPATTERN DB予測を表示します' : '';
+  }
+
+  initChart('chCmp').setOption({ ...baseOpts,
+    legend:{ data:series.filter(s=>s.name!=='_sep'&&s.name!=='_scn_sep').map(s=>s.name),
+      textStyle:{color:'#64748b',fontFamily:'Space Mono',fontSize:9}, top:0, right:0 },
+    tooltip:{ trigger:'axis', formatter: params => {
+      const d = allDates[params[0]?.dataIndex];
+      if(!d) return '';
+      let html = `<b style="font-family:Space Mono;font-size:10px">${d}</b><br>`;
+      params.forEach(p => {
+        if(p.seriesName==='_sep'||p.seriesName==='_scn_sep'||p.value===null) return;
+        const col = p.color?.colorStops?.[0]?.color || p.color || '#fff';
+        html += `<span style="color:${col}">●</span> ${p.seriesName}: `;
+        if(p.seriesName==='S&P500'||p.seriesName==='PDB予測(中央値)')
+          html += fmtN(p.value) + '<br>';
+        else
+          html += p.value?.toFixed?.(2) + '<br>';
+      });
+      return html;
+    }},
+    xAxis:{ type:'category', data:allDates, ...axStyle,
+      axisLabel:{...axStyle.axisLabel, rotate:35,
+        rich:{fc:{color:'#a78bfa'},scn:{color:'#10b981'}},
+        formatter: d => {
+          if (scnDates.includes(d) && d !== (scnFc?.today)) return `{scn|${d}}`;
+          if (fcDates.includes(d) && d !== lastDate) return `{fc|${d}}`;
+          return d;
+        }
+      }
+    },
+    yAxis: yAxes,
+    series,
+    grid:{ left:'2%', right: yAxisCount > 2 ? `${(yAxisCount-1)*5+4}%` : '8%', bottom:'14%', top:'36px', containLabel:true },
+  });
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1468,23 +2026,6 @@ function pdbRenderTable(scored) {
 
 // ═══════════════════════════════════════════════════════
 // EXPORT
-// ═══════════════════════════════════════════════════════
-function exportForecasts() {
-  const fc   = allFC();
-  const rows = [['指標名', '発表日', '予想値', '保存日時', '事後入力']];
-  Object.entries(fc).forEach(([k, v]) => {
-    const parts = k.split('_');
-    const dt = parts[parts.length - 1];
-    const ind = parts.slice(0, -1).join('_');
-    rows.push([ind, dt, v.forecast, v.savedAt, v.retroactive ? 'yes' : 'no']);
-  });
-  const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
-  const a = document.createElement('a');
-  a.href = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csv);
-  a.download = 'macropulse_forecasts.csv';
-  a.click();
-}
-
 // ═══════════════════════════════════════════════════════
 // NOTICE
 // ═══════════════════════════════════════════════════════
