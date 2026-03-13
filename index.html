@@ -226,6 +226,21 @@
     .phase-edge    {color:var(--amb)}
     .phase-recession{color:var(--red)}
 
+    /* ── Layer 3: Recession Similarity ── */
+    .l3-wrap{border:1px solid var(--bdr);background:var(--sur);margin-bottom:14px;padding:14px 20px}
+    .l3-title{font-family:var(--mono);font-size:9px;letter-spacing:.15em;color:var(--mut);text-transform:uppercase;margin-bottom:14px}
+    .l3-body{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+    @media(max-width:700px){.l3-body{grid-template-columns:1fr}}
+    .l3-chart{width:100%;height:280px}
+    .l3-scores{display:flex;flex-direction:column;gap:10px;justify-content:center}
+    .l3-score-row{display:flex;flex-direction:column;gap:4px}
+    .l3-score-label{font-family:var(--mono);font-size:9px;letter-spacing:.1em;color:var(--mut);text-transform:uppercase;display:flex;justify-content:space-between;align-items:center}
+    .l3-score-era{color:var(--txt)}
+    .l3-score-pct{font-family:var(--mono);font-size:15px;font-weight:700}
+    .l3-score-bar-track{height:5px;background:var(--sur2);border:1px solid var(--bdr);border-radius:2px;overflow:hidden}
+    .l3-score-bar-fill{height:100%;border-radius:2px;transition:width .7s ease}
+    .l3-note{font-family:var(--mono);font-size:9px;color:var(--mut);margin-top:12px;line-height:1.6;border-top:1px solid var(--bdr);padding-top:10px}
+
     /* ── Schedule Panel ── */
     /* スケジュール: コンパクトテーブル型 */
     .sched-table{width:100%;border-collapse:collapse}
@@ -319,6 +334,15 @@
   <div class="l2-wrap" id="l2Wrap">
     <div class="l2-title">▸ INDICATOR HEALTH BARS — 各指標の現在地（直近値 vs 閾値）</div>
     <div class="l2-grid" id="l2Grid"><div style="font-family:var(--mono);font-size:10px;color:var(--mut)">Loading...</div></div>
+  </div>
+
+  <!-- Layer 3: Recession Similarity -->
+  <div class="l3-wrap" id="l3Wrap">
+    <div class="l3-title">▸ RECESSION SIMILARITY — 過去の景気後退入口との類似度</div>
+    <div class="l3-body">
+      <div class="l3-chart" id="l3Chart"></div>
+      <div class="l3-scores" id="l3Scores"><div style="font-family:var(--mono);font-size:10px;color:var(--mut)">Loading...</div></div>
+    </div>
   </div>
 
   <!-- Ticker -->
@@ -828,6 +852,7 @@ function render() {
   updateTicker();
   renderPhaseGauge();
   renderL2();
+  renderL3();
   renderEnvSnap();
   renderCards();
   cmpPopulate();
@@ -1188,6 +1213,167 @@ function renderL2() {
 
 // PHASE GAUGE — 景気フェーズ判定メーター
 // ═══════════════════════════════════════════════════════
+// LAYER 3 — Recession Similarity Radar
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 各指標を 0〜100 に正規化し、過去後退入口時点の値と比較。
+// 距離が近いほど類似度が高い。
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function renderL3() {
+  const scoresEl = document.getElementById('l3Scores');
+  const chartEl  = document.getElementById('l3Chart');
+  if (!DATA.length) { scoresEl.innerHTML = '<div style="font-family:var(--mono);font-size:10px;color:var(--mut)">データなし</div>'; return; }
+
+  // 最新値を取得
+  const latest = (ind) => {
+    const rows = DATA.filter(r => r[COL.indicator] === ind && n(r[COL.actual]) !== null);
+    if (!rows.length) return null;
+    return n(rows.sort((a,b) => new Date(b[COL.date]) - new Date(a[COL.date]))[0][COL.actual]);
+  };
+
+  // ── 指標定義 ──
+  // normalize(val, min, max): minがBEAR方向、maxがBULL方向 → 0(BEAR)〜100(BULL)
+  // 左BULL指標（低いほどBULL）は min/max を逆にして渡す
+  const INDICATORS = [
+    { label:'YC 10Y-2Y',    key:'Yield Curve 10Y-2Y',          min:-1.0, max:1.5  },
+    { label:'ISM Mfg',      key:'ISM Manufacturing PMI',        min:44,   max:56   },
+    { label:'ISM Non-Mfg',  key:'ISM Non-Manufacturing PMI',    min:44,   max:56   },
+    { label:'HY Spread',    key:'HY Spread',                    min:10,   max:2.5  }, // 逆
+    { label:'VIX',          key:'VIX',                          min:45,   max:10   }, // 逆
+    { label:'Michigan',     key:'Michigan Consumer Sentiment',  min:50,   max:110  },
+    { label:'Initial Clms', key:'Initial Claims 4W MA',         min:350000, max:180000 }, // 逆
+    { label:'OECD CLI',     key:'Conference Board LEI',         min:98.5, max:101.0},
+  ];
+
+  // 正規化関数
+  const normalize = (val, min, max) => {
+    if (val === null) return 50; // データなしは中立
+    const pct = (val - min) / (max - min) * 100;
+    return Math.max(0, Math.min(100, pct));
+  };
+
+  // ── 過去後退入口時点の参照値（ハードコード）──
+  // 2019年末 後退入口局面（2019-09〜2019-12頃の値）
+  const REF_2019 = {
+    'Yield Curve 10Y-2Y':         -0.05,
+    'ISM Manufacturing PMI':       47.8,
+    'ISM Non-Manufacturing PMI':   53.9,
+    'HY Spread':                    4.0,
+    'VIX':                         16.0,
+    'Michigan Consumer Sentiment':  96.0,
+    'Initial Claims 4W MA':       215000,
+    'Conference Board LEI':        99.1,
+  };
+
+  // 2001年 ITバブル崩壊入口（2001-01〜2001-03頃の値）
+  const REF_2001 = {
+    'Yield Curve 10Y-2Y':          0.2,
+    'ISM Manufacturing PMI':       41.9,
+    'ISM Non-Manufacturing PMI':   51.0,
+    'HY Spread':                    8.5,
+    'VIX':                         26.0,
+    'Michigan Consumer Sentiment':  90.0,
+    'Initial Claims 4W MA':       360000,
+    'Conference Board LEI':        99.2,
+  };
+
+  // 現在値を正規化
+  const nowVals   = INDICATORS.map(d => normalize(latest(d.key), d.min, d.max));
+  const vals2019  = INDICATORS.map(d => normalize(REF_2019[d.key], d.min, d.max));
+  const vals2001  = INDICATORS.map(d => normalize(REF_2001[d.key], d.min, d.max));
+
+  // 類似度スコア計算（ユークリッド距離 → 100点満点に変換）
+  const similarity = (a, b) => {
+    const dist = Math.sqrt(a.reduce((s, v, i) => s + Math.pow(v - b[i], 2), 0));
+    const maxDist = Math.sqrt(INDICATORS.length * 100 * 100); // 最大距離
+    return Math.round((1 - dist / maxDist) * 100);
+  };
+
+  const sim2019 = similarity(nowVals, vals2019);
+  const sim2001 = similarity(nowVals, vals2001);
+
+  // ── レーダーチャート描画（echarts）──
+  let chart = echarts.getInstanceByDom(chartEl);
+  if (!chart) chart = echarts.init(chartEl, null, { renderer:'svg' });
+
+  const radar = {
+    indicator: INDICATORS.map(d => ({ name: d.label, max: 100, min: 0 })),
+    center: ['50%', '50%'],
+    radius: '72%',
+    axisName: { color:'#64748b', fontSize:9, fontFamily:"'Space Mono',monospace" },
+    splitLine:  { lineStyle:{ color:'#1e2840' } },
+    splitArea:  { show:false },
+    axisLine:   { lineStyle:{ color:'#1e2840' } },
+  };
+
+  chart.setOption({
+    backgroundColor: 'transparent',
+    tooltip: {
+      trigger:'item',
+      backgroundColor:'#111520',
+      borderColor:'#1e2840',
+      textStyle:{ color:'#e2e8f0', fontSize:10, fontFamily:"'Space Mono',monospace" },
+    },
+    legend: {
+      bottom: 0,
+      textStyle:{ color:'#64748b', fontSize:9, fontFamily:"'Space Mono',monospace" },
+      itemWidth: 10, itemHeight: 6,
+    },
+    radar,
+    series:[{
+      type:'radar',
+      data:[
+        {
+          name:'現在',
+          value: nowVals,
+          lineStyle:{ color:'#3b82f6', width:2 },
+          areaStyle:{ color:'rgba(59,130,246,0.12)' },
+          symbol:'circle', symbolSize:4, itemStyle:{ color:'#3b82f6' },
+        },
+        {
+          name:'2019年末',
+          value: vals2019,
+          lineStyle:{ color:'#f59e0b', width:1.5, type:'dashed' },
+          areaStyle:{ color:'rgba(245,158,11,0.06)' },
+          symbol:'circle', symbolSize:3, itemStyle:{ color:'#f59e0b' },
+        },
+        {
+          name:'2001年',
+          value: vals2001,
+          lineStyle:{ color:'#f43f5e', width:1.5, type:'dashed' },
+          areaStyle:{ color:'rgba(244,63,94,0.06)' },
+          symbol:'circle', symbolSize:3, itemStyle:{ color:'#f43f5e' },
+        },
+      ],
+    }],
+  });
+
+  // ── スコア表示 ──
+  const scoreColor = (s) => s >= 75 ? '#f43f5e' : s >= 60 ? '#f59e0b' : s >= 45 ? '#3b82f6' : '#10b981';
+
+  const mkRow = (label, score, color, desc) => `
+    <div class="l3-score-row">
+      <div class="l3-score-label">
+        <span class="l3-score-era">${label}</span>
+        <span class="l3-score-pct" style="color:${color}">${score}%</span>
+      </div>
+      <div class="l3-score-bar-track">
+        <div class="l3-score-bar-fill" style="width:${score}%;background:${color}"></div>
+      </div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--mut);margin-top:2px">${desc}</div>
+    </div>`;
+
+  const desc2019 = sim2019 >= 70 ? '⚠ 構造が近似。注意が必要' : sim2019 >= 55 ? '一部の指標が類似傾向' : '現在は大きく乖離';
+  const desc2001 = sim2001 >= 70 ? '⚠ 構造が近似。注意が必要' : sim2001 >= 55 ? '一部の指標が類似傾向' : '現在は大きく乖離';
+
+  scoresEl.innerHTML =
+    mkRow('2019年末（後退入口）', sim2019, scoreColor(sim2019), desc2019) +
+    mkRow('2001年（ITバブル崩壊）', sim2001, scoreColor(sim2001), desc2001) +
+    `<div class="l3-note">
+      各指標を 0（ベア）〜 100（ブル）に正規化し、過去後退入口時点との<br>
+      ユークリッド距離から類似度を算出。数値は目安であり予測精度を保証しない。
+    </div>`;
+}
+
 function renderPhaseGauge() {
   if (!DATA.length) return;
 
